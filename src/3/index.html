@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+   <head>
+   <meta charset='UTF-8'>
+      <title>WebGL stuff</title>
+      <style type='text/css'>
+
+         html * {
+            margin : 0;
+            padding : 0;
+            overflow : hidden;
+         }
+
+      </style>
+      <script type='text/javascript' src='js/gl-matrix.js'></script>
+      <script type='text/javascript' src='js/main.js'></script>
+      <script type='x-shader/x-fragment' id='shader-fs'>
+
+         precision mediump float;
+
+         varying vec4 vColor;
+
+         void main(void) {
+            gl_FragColor = vColor;
+         }
+
+      </script>
+      <script type='x-shader/x-vertex' id='shader-vs'> 
+
+         attribute vec3 aVertexPosition;
+         attribute vec4 aVertexColor;
+
+         uniform mat4 uMVMatrix;
+         uniform mat4 uPMatrix;
+
+         varying vec4 vColor;
+
+         void main(void) {
+            gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+            vColor = aVertexColor;
+         }
+
+      </script>
+   </head>
+   <body >
+      <canvas id='can'></canvas>
+   </body>
+</html>
+
