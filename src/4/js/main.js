@@ -4,6 +4,8 @@
 
 var gl, shaderProgram, items, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
 
+var s;
+
 window.onload = function initialise() {
    can = document.getElementById('can');
 
@@ -19,26 +21,108 @@ window.onload = function initialise() {
    }
 
 
-
-  colors = [
-      [1,  0,  0,  1],     // Front face
-      [1,  1,  0,  1],     // Back face
-      [0,  1,  0,  1],     // Top face
-      [1, .5, .5,  1],     // Bottom face
-      [1,  0,  1,  1],     // Right face
-      [0,  0,  1,  1],     // Left face
-    ];
-    var unpackedColors = [];
-    for (var i in colors) {
-      var color = colors[i];
-      for (var j=0; j < 4; j++) {
-        unpackedColors = unpackedColors.concat(color);
-      }
-    } 
-   
    initialiseGL(can);
    initialiseShaders();
 
+
+
+
+   var latitudeBands = 20;
+   var longitudeBands = 20
+   var radius = 1;
+
+
+
+  var vertexPositionData = [];
+    var normalData = [];
+    var textureCoordData = [];
+    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+      var theta = latNumber * Math.PI / latitudeBands;
+      var sinTheta = Math.sin(theta);
+      var cosTheta = Math.cos(theta);
+
+      for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+        var phi = longNumber * 2 * Math.PI / longitudeBands;
+        var sinPhi = Math.sin(phi);
+        var cosPhi = Math.cos(phi);
+
+        var x = cosPhi * sinTheta;
+        var y = cosTheta;
+        var z = sinPhi * sinTheta;
+        var u = 1 - (longNumber / longitudeBands);
+        var v = 1 - (latNumber / latitudeBands);
+
+        normalData.push(x);
+        normalData.push(y);
+        normalData.push(z);
+        textureCoordData.push(u);
+        textureCoordData.push(v);
+        vertexPositionData.push(radius * x);
+        vertexPositionData.push(radius * y);
+        vertexPositionData.push(radius * z);
+      }
+    }
+
+
+var indexData = [];
+    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+      for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+        var first = (latNumber * (longitudeBands + 1)) + longNumber;
+        var second = first + longitudeBands + 1;
+        indexData.push(first);
+        indexData.push(second);
+        indexData.push(first + 1);
+
+        indexData.push(second);
+        indexData.push(second + 1);
+        indexData.push(first + 1);
+      }
+    }
+
+   console.log(vertexPositionData.length);
+//   console.log(normalData.length);
+//   console.log(indexData);
+
+
+
+
+
+
+   var tem = [1, 1, 1, 1];
+
+   col = [];
+
+   for (var i = 0; i < 441; i++) {
+      col = col.concat(tem);
+   }
+   
+
+   s = new Cube(vertexPositionData, 3, indexData, col, 4);
+
+
+
+
+
+
+   // building color array
+   
+   colors = [ // front back top bottom right left
+      [1,  0,  0,  1],
+      [1,  1,  0,  1],
+      [0,  1,  0,  1],
+      [1, .5, .5,  1],
+      [1,  0,  1,  1],
+      [0,  0,  1,  1],
+    ];
+   
+   var unpackedColors = [];
+   for (var i in colors) {
+   var color = colors[i];
+      for (var j = 0; j < 4; j++) {
+         unpackedColors = unpackedColors.concat(color);
+      }
+   } 
+   
    items = initialiseItems([new Item([
        0,  1,  0,
       -1, -1,  0,
@@ -57,52 +141,45 @@ window.onload = function initialise() {
        0,  1,  0,  1,
        1,  0,  1,  1,
        1,  0,  1,  1
-   ], 4), new Cube([
-      // front face
+   ], 4), new Cube([ // front back top  bottom right left
       -1, -1,  1,
        1, -1,  1,
        1,  1,  1,
       -1,  1,  1,
 
-      // back face
       -1, -1, -1,
       -1,  1, -1,
        1,  1, -1,
        1, -1, -1,
 
-      // top face
       -1,  1, -1,
       -1,  1,  1,
        1,  1,  1,
        1,  1, -1,
 
-      // bottom face
       -1, -1, -1,
        1, -1, -1,
        1, -1,  1,
       -1, -1,  1,
-
-      // right face
+       
        1, -1, -1,
        1,  1, -1,
        1,  1,  1,
        1, -1,  1,
 
-      // left face
       -1, -1, -1,
       -1, -1,  1,
       -1,  1,  1,
       -1,  1, -1
-      ], 3, [
-      0, 1, 2,      0, 2, 3,    // Front face
-      4, 5, 6,      4, 6, 7,    // Back face
-      8, 9, 10,     8, 10, 11,  // Top face
-      12, 13, 14,   12, 14, 15, // Bottom face
-      16, 17, 18,   16, 18, 19, // Right face
-      20, 21, 22,   20, 22, 23  // Left face
-      ], unpackedColors, 4)]);
+      ], 3, [ // front back top bottom right left
+       0,  1,  2,  0,  2,  3, 
+       4,  5,  6,  4,  6,  7, 
+       8,  9, 10,  8, 10, 11, 
+      12, 13, 14, 12, 14, 15,
+      16, 17, 18, 16, 18, 19, 
+      20, 21, 22, 20, 22, 23  
+      ], unpackedColors, 4), s]);
  
-   
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
 
@@ -135,8 +212,8 @@ function initialiseGL(can) {
  *
  */
 function initialiseShaders() {
-   var fragmentShader = getShader('shader-fs'),
-       vertexShader = getShader('shader-vs');
+   var fragmentShader = getShader(gl, 'shader-fs'),
+       vertexShader = getShader(gl, 'shader-vs');
    
    shaderProgram = gl.createProgram();
 
@@ -179,7 +256,7 @@ function initialiseItems(items) {
  * keeps in sync with browser animation frames
  */
 function tick() {
-  requestAnimationFrame(tick);
+//requestAnimationFrame(tick);
 
    drawScene();
    animate();
@@ -195,7 +272,8 @@ function animate() {
 
    if (animate.timeLast) {
       var elapsed = timeNow - animate.timeLast;
-    
+   
+      // stuff to do every tick here
 
       for (var i = 0; i < items.length; i++) {
          items[i].animate();
@@ -212,18 +290,13 @@ function drawScene() {
    gl.viewport(0, 0, gl.width, gl.height);
    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
    mat4.perspective(pMatrix, 90, gl.width / gl.height, 0.1, 100);
  
+   // moving the perspective based on cursor location
    mat4.translate(pMatrix, pMatrix, [0, 0, -7])
-   mat4.rotate(pMatrix, pMatrix, -.5  + (pMovement.x), [0, 1, 0]);
+   mat4.rotate(pMatrix, pMatrix, -.5 + pMovement.x, [0, 1, 0]);
+   mat4.rotate(pMatrix, pMatrix, -.5 + pMovement.y, [1, 0, 0]);
    mat4.translate(pMatrix, pMatrix, [0, 0, 7])
-   
-   mat4.translate(pMatrix, pMatrix, [0, 0, -7])
-   mat4.rotate(pMatrix, pMatrix, -.5 + (pMovement.y), [1, 0, 0]);
-   mat4.translate(pMatrix, pMatrix, [0, 0, 7])
-
-
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
 
@@ -243,11 +316,18 @@ function drawScene() {
    mvMatrix = mat4.create();
 
    // cube
-   items[1].pushMatrix([
+   items[2].pushMatrix([
          mat4.translate(mvMatrix, mvMatrix, [1, 0, -5]),
          mat4.rotate(mvMatrix, mvMatrix, 1, [1, 1, 0])]);
 
    items[2].draw();
+   mvMatrix = mat4.create();
+
+   // spehere
+   items[3].pushMatrix([
+         mat4.translate(mvMatrix, mvMatrix, [1, 0, -2])]);
+
+   items[3].draw();
    mvMatrix = mat4.create();
 }
 
@@ -258,7 +338,8 @@ function drawScene() {
 /**
  * @param   vertices       array of vertex descriptions
  * @param   vertexLength   length of vertex description
- *
+ * @param   colors         array of color descriptions
+ * @param   colorLength    length of color description
  */
 function Item(vertices, vertexLength, colors, colorLength, animation) {
    this.vertices = new Float32Array(vertices);
@@ -291,7 +372,7 @@ Item.prototype.pushMatrix = function(matrixList) {
 
 
 /**
- * @return                 webgl buffer of the instance called upon
+ * @return                 webgl buffer (vertex)
  */
 Item.prototype.bufferVertices = function() {
    var buffer = gl.createBuffer();
@@ -305,7 +386,7 @@ Item.prototype.bufferVertices = function() {
 
 
 /**
- * @return                 webgl buffer of the instance called upon
+ * @return                 webgl buffer (color)
  */
 Item.prototype.bufferColors = function() {
    var buffer = gl.createBuffer();
@@ -319,7 +400,7 @@ Item.prototype.bufferColors = function() {
 
 
 /**
- *
+ * draws the item
  */
 Item.prototype.draw = function() {
    mat4.identity(this.matrix);   
@@ -336,7 +417,6 @@ Item.prototype.draw = function() {
    setMatrixUniforms(gl, shaderProgram);
    gl.drawArrays(gl.TRIANGLE_STRIP, 0, bufferVertices.vertexCount);
 }
-
 
 
 
@@ -359,7 +439,9 @@ function Cube(vertices, vertexLength, vertexIndices, colors, colorLength, animat
 Cube.prototype = Object.create(Item.prototype);
 Cube.prototype.constructor = Cube;
 
-
+/**
+ * @return                 webgl buffer (element)
+ */
 Cube.prototype.bufferVertexIndices = function() {
    var buffer = gl.createBuffer();
    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
@@ -369,6 +451,9 @@ Cube.prototype.bufferVertexIndices = function() {
 }
 
 
+/**
+ * draws the cube
+ */
 Cube.prototype.draw = function() {
    mat4.identity(this.matrix);   
 
@@ -381,13 +466,58 @@ Cube.prototype.draw = function() {
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColors);
    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, bufferColors.colorLength, gl.FLOAT, false, 0, 0);
 
-
    var bufferVertexIndices = this.bufferVertexIndices();
    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferVertexIndices);
 
    setMatrixUniforms();
    gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
 }
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// sphere
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // tools
@@ -397,76 +527,6 @@ function setMatrixUniforms() {
    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 }
-
-
-
-/**
- * @param   gl             webgl context object
- * @param   id             id of dom object containing shader
- * @return                 shader program
- */
-function getShader(id) {
-   var shader;
-
-   try {
-      var shaderScript = document.getElementById(id);
-
-      if (!shaderScript) {
-         throw Exception();
-      }
-
-      var str = '';
-      var k = shaderScript.firstChild;
-      while (k) {
-         if (k.nodeType == 3) {
-            str += k.textContent;
-         }
-         k = k.nextSibling;
-      }
-
-      switch (shaderScript.type) {
-         case 'x-shader/x-fragment' : 
-            shader = gl.createShader(gl.FRAGMENT_SHADER);
-            break;
-         case 'x-shader/x-vertex' :
-            shader = gl.createShader(gl.VERTEX_SHADER);
-            break;
-      }
-        
-      gl.shaderSource(shader, str);
-      gl.compileShader(shader);
-
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-         throw new Exception(gl.getShaderInfoLog(shader));
-      }
-
-   } catch (exception) {
-      console.error(exeception.getMessage());
-
-   } finally {
-      return shader;
-   }
-}
-
-
-
-/**
- * @return  object         description of viewport dimensions 
- */
-function getViewportDimensions() {
-   var e = window, a = 'inner';
-
-   if (!('innerWidth' in window)) {
-      a = 'client';
-      e = document.documentElement || document.body;
-   }
-   return { 
-      w : e[a + 'Width'], 
-      h : e[a + 'Height']
-   };
-}
-
-
 
 
 
