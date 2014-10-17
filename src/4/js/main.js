@@ -2,20 +2,31 @@
 // initialisation
 
 
-var gl, shaderProgram, items, mvMatrix = mat4.create(), pMatrix = mat4.create();
-   
+var gl, shaderProgram, items, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
 
 window.onload = function initialise() {
-   var can = document.getElementById('can');
+   can = document.getElementById('can');
+
+   // mouse movement & perspective shifting
+   can.onmousemove = function(eve) {
+      var rect = eve.target.getBoundingClientRect(),
+          can = eve.srcElement;
+
+      pMovement = {
+         x : (eve.clientX - rect.left) / can.width,
+         y : (eve.clientY - rect.top) / can.height
+      };
+   }
+
 
 
   colors = [
-      [1.0, 0.0, 0.0, 1.0],     // Front face
-      [1.0, 1.0, 0.0, 1.0],     // Back face
-      [0.0, 1.0, 0.0, 1.0],     // Top face
-      [1.0, 0.5, 0.5, 1.0],     // Bottom face
-      [1.0, 0.0, 1.0, 1.0],     // Right face
-      [0.0, 0.0, 1.0, 1.0],     // Left face
+      [1,  0,  0,  1],     // Front face
+      [1,  1,  0,  1],     // Back face
+      [0,  1,  0,  1],     // Top face
+      [1, .5, .5,  1],     // Bottom face
+      [1,  0,  1,  1],     // Right face
+      [0,  0,  1,  1],     // Left face
     ];
     var unpackedColors = [];
     for (var i in colors) {
@@ -29,59 +40,59 @@ window.onload = function initialise() {
    initialiseShaders();
 
    items = initialiseItems([new Item([
-        0,   1,   0,
-       -1,  -1,   0,
-        1,  -1,   0
+       0,  1,  0,
+      -1, -1,  0,
+       1, -1,  0
    ], 3, [
-        1,   0,   0,   1,
-        0,   1,   0,   1,
-        0,   0,   1,   1
+       1,  0,  0,  1,
+       0,  1,  0,  1,
+       0,  0,  1,  1
    ], 4), new Item([
-        1,   1,   0,
-       -1,   1,   0,
-        1,  -1,   0,
-       -1,  -1,   0
+       1,  1,  0,
+      -1,  1,  0,
+       1, -1,  0,
+      -1, -1,  0
    ], 3, [
-        1,   0,   0,   1,
-        0,   1,   0,   1,
-        1,   0,   1,   1,
-        1,   0,   1,   1
+       1,  0,  0,  1,
+       0,  1,  0,  1,
+       1,  0,  1,  1,
+       1,  0,  1,  1
    ], 4), new Cube([
       // front face
-      -1.0, -1.0,  1.0,
-       1.0, -1.0,  1.0,
-       1.0,  1.0,  1.0,
-      -1.0,  1.0,  1.0,
+      -1, -1,  1,
+       1, -1,  1,
+       1,  1,  1,
+      -1,  1,  1,
 
       // back face
-      -1.0, -1.0, -1.0,
-      -1.0,  1.0, -1.0,
-       1.0,  1.0, -1.0,
-       1.0, -1.0, -1.0,
+      -1, -1, -1,
+      -1,  1, -1,
+       1,  1, -1,
+       1, -1, -1,
 
       // top face
-      -1.0,  1.0, -1.0,
-      -1.0,  1.0,  1.0,
-       1.0,  1.0,  1.0,
-       1.0,  1.0, -1.0,
+      -1,  1, -1,
+      -1,  1,  1,
+       1,  1,  1,
+       1,  1, -1,
 
       // bottom face
-      -1.0, -1.0, -1.0,
-       1.0, -1.0, -1.0,
-       1.0, -1.0,  1.0,
-      -1.0, -1.0,  1.0,
+      -1, -1, -1,
+       1, -1, -1,
+       1, -1,  1,
+      -1, -1,  1,
 
       // right face
-       1.0, -1.0, -1.0,
-       1.0,  1.0, -1.0,
-       1.0,  1.0,  1.0,
-       1.0, -1.0,  1.0,
+       1, -1, -1,
+       1,  1, -1,
+       1,  1,  1,
+       1, -1,  1,
 
       // left face
-      -1.0, -1.0, -1.0,
-      -1.0, -1.0,  1.0,
-      -1.0,  1.0,  1.0,
-      -1.0,  1.0, -1.0
+      -1, -1, -1,
+      -1, -1,  1,
+      -1,  1,  1,
+      -1,  1, -1
       ], 3, [
       0, 1, 2,      0, 2, 3,    // Front face
       4, 5, 6,      4, 6, 7,    // Back face
@@ -92,7 +103,7 @@ window.onload = function initialise() {
       ], unpackedColors, 4)]);
  
    
-   gl.clearColor(0.0, 0.0, 0.0, 1.0);
+   gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
 
    animate.timeLast = 0;
@@ -168,7 +179,7 @@ function initialiseItems(items) {
  * keeps in sync with browser animation frames
  */
 function tick() {
-   //requestAnimationFrame(tick);
+  requestAnimationFrame(tick);
 
    drawScene();
    animate();
@@ -184,7 +195,7 @@ function animate() {
 
    if (animate.timeLast) {
       var elapsed = timeNow - animate.timeLast;
-
+    
 
       for (var i = 0; i < items.length; i++) {
          items[i].animate();
@@ -201,7 +212,18 @@ function drawScene() {
    gl.viewport(0, 0, gl.width, gl.height);
    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-   mat4.perspective(pMatrix, 90, gl.width / gl.height, 0.1, 100.0);
+
+   mat4.perspective(pMatrix, 90, gl.width / gl.height, 0.1, 100);
+ 
+   mat4.translate(pMatrix, pMatrix, [0, 0, -7])
+   mat4.rotate(pMatrix, pMatrix, -.5  + (pMovement.x), [0, 1, 0]);
+   mat4.translate(pMatrix, pMatrix, [0, 0, 7])
+   
+   mat4.translate(pMatrix, pMatrix, [0, 0, -7])
+   mat4.rotate(pMatrix, pMatrix, -.5 + (pMovement.y), [1, 0, 0]);
+   mat4.translate(pMatrix, pMatrix, [0, 0, 7])
+
+
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
 
@@ -443,4 +465,8 @@ function getViewportDimensions() {
       h : e[a + 'Height']
    };
 }
+
+
+
+
 
