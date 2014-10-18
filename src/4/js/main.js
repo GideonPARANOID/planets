@@ -4,7 +4,6 @@
 
 var gl, shaderProgram, items, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
 
-var s;
 
 window.onload = function initialise() {
    can = document.getElementById('can');
@@ -25,69 +24,6 @@ window.onload = function initialise() {
    initialiseShaders();
 
 
-
-
-   var latitudeBands = 20;
-   var longitudeBands = 20
-   var radius = 1;
-
-
-
-  var vertexPositionData = [];
-    var normalData = [];
-    var textureCoordData = [];
-    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
-      var theta = latNumber * Math.PI / latitudeBands;
-      var sinTheta = Math.sin(theta);
-      var cosTheta = Math.cos(theta);
-
-      for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
-        var phi = longNumber * 2 * Math.PI / longitudeBands;
-        var sinPhi = Math.sin(phi);
-        var cosPhi = Math.cos(phi);
-
-        var x = cosPhi * sinTheta;
-        var y = cosTheta;
-        var z = sinPhi * sinTheta;
-        var u = 1 - (longNumber / longitudeBands);
-        var v = 1 - (latNumber / latitudeBands);
-
-        normalData.push(x);
-        normalData.push(y);
-        normalData.push(z);
-        textureCoordData.push(u);
-        textureCoordData.push(v);
-        vertexPositionData.push(radius * x);
-        vertexPositionData.push(radius * y);
-        vertexPositionData.push(radius * z);
-      }
-    }
-
-
-var indexData = [];
-    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
-      for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
-        var first = (latNumber * (longitudeBands + 1)) + longNumber;
-        var second = first + longitudeBands + 1;
-        indexData.push(first);
-        indexData.push(second);
-        indexData.push(first + 1);
-
-        indexData.push(second);
-        indexData.push(second + 1);
-        indexData.push(first + 1);
-      }
-    }
-
-   console.log(vertexPositionData.length);
-//   console.log(normalData.length);
-//   console.log(indexData);
-
-
-
-
-
-
    var tem = [1, 1, 1, 1];
 
    col = [];
@@ -96,13 +32,6 @@ var indexData = [];
       col = col.concat(tem);
    }
    
-
-   s = new Cube(vertexPositionData, 3, indexData, col, 4);
-
-
-
-
-
 
    // building color array
    
@@ -127,58 +56,22 @@ var indexData = [];
        0,  1,  0,
       -1, -1,  0,
        1, -1,  0
-   ], 3, [
+   ], [
        1,  0,  0,  1,
        0,  1,  0,  1,
        0,  0,  1,  1
-   ], 4), new Item([
+   ]), new Item([
        1,  1,  0,
       -1,  1,  0,
        1, -1,  0,
       -1, -1,  0
-   ], 3, [
+   ], [
        1,  0,  0,  1,
        0,  1,  0,  1,
        1,  0,  1,  1,
        1,  0,  1,  1
-   ], 4), new Cube([ // front back top  bottom right left
-      -1, -1,  1,
-       1, -1,  1,
-       1,  1,  1,
-      -1,  1,  1,
-
-      -1, -1, -1,
-      -1,  1, -1,
-       1,  1, -1,
-       1, -1, -1,
-
-      -1,  1, -1,
-      -1,  1,  1,
-       1,  1,  1,
-       1,  1, -1,
-
-      -1, -1, -1,
-       1, -1, -1,
-       1, -1,  1,
-      -1, -1,  1,
-       
-       1, -1, -1,
-       1,  1, -1,
-       1,  1,  1,
-       1, -1,  1,
-
-      -1, -1, -1,
-      -1, -1,  1,
-      -1,  1,  1,
-      -1,  1, -1
-      ], 3, [ // front back top bottom right left
-       0,  1,  2,  0,  2,  3, 
-       4,  5,  6,  4,  6,  7, 
-       8,  9, 10,  8, 10, 11, 
-      12, 13, 14, 12, 14, 15,
-      16, 17, 18, 16, 18, 19, 
-      20, 21, 22, 20, 22, 23  
-      ], unpackedColors, 4), s]);
+   ]), new Cube(1, unpackedColors), 
+       new Sphere(1, 20, col)]);
  
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
@@ -325,7 +218,7 @@ function drawScene() {
 
    // spehere
    items[3].pushMatrix([
-         mat4.translate(mvMatrix, mvMatrix, [1, 0, -2])]);
+         mat4.translate(mvMatrix, mvMatrix, [2, 0, -2])]);
 
    items[3].draw();
    mvMatrix = mat4.create();
@@ -337,21 +230,36 @@ function drawScene() {
 
 /**
  * @param   vertices       array of vertex descriptions
- * @param   vertexLength   length of vertex description
  * @param   colors         array of color descriptions
- * @param   colorLength    length of color description
  */
-function Item(vertices, vertexLength, colors, colorLength, animation) {
+function Item(vertices, colors, animation) {
    this.vertices = new Float32Array(vertices);
-   this.vertexCount = vertices.length / vertexLength;
-   this.vertexLength = vertexLength;
+   this.vertexCount = vertices.length / 3;
 
    this.colors = new Float32Array(colors);
-   this.colorCount = colors.length / colorLength;
-   this.colorLength = colorLength;
+   this.colorCount = colors.length / 4;
 
    this.animation = animation;
    this.matrix = mat4.create();
+
+   
+   this.bufferVertices = function() {
+      var buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
+      buffer.vertexCount = this.vertexCount;
+
+      return buffer;
+   }
+
+   this.bufferColors = function() {
+      var buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
+      buffer.colorCount = this.colorCount;
+
+      return buffer;
+   }
 }
 
 
@@ -372,34 +280,6 @@ Item.prototype.pushMatrix = function(matrixList) {
 
 
 /**
- * @return                 webgl buffer (vertex)
- */
-Item.prototype.bufferVertices = function() {
-   var buffer = gl.createBuffer();
-   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-   gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
-   buffer.vertexCount = this.vertexCount;
-   buffer.vertexLength = this.vertexLength;
-
-   return buffer;
-}
-
-
-/**
- * @return                 webgl buffer (color)
- */
-Item.prototype.bufferColors = function() {
-   var buffer = gl.createBuffer();
-   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-   gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
-   buffer.colorCount = this.colorCount;
-   buffer.colorLength = this.colorLength;
-
-   return buffer;
-}
-
-
-/**
  * draws the item
  */
 Item.prototype.draw = function() {
@@ -408,16 +288,15 @@ Item.prototype.draw = function() {
    var bufferVertices = this.bufferVertices(gl);
 
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
-   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, bufferVertices.vertexLength, gl.FLOAT, false, 0, 0);
+   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 
    var bufferColors = this.bufferColors(gl);
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColors);
-   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, bufferColors.colorLength, gl.FLOAT, false, 0, 0);
+   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
    setMatrixUniforms(gl, shaderProgram);
    gl.drawArrays(gl.TRIANGLE_STRIP, 0, bufferVertices.vertexCount);
 }
-
 
 
 Item.prototype.animate = function() {
@@ -426,45 +305,43 @@ Item.prototype.animate = function() {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// cube class
+// element driven item
 
 
-function Cube(vertices, vertexLength, vertexIndices, colors, colorLength, animation) {
-   Item.call(this, vertices, vertexLength, colors, colorLength, animation);
+/**
+ * @param   vertices       array of vertex descriptions
+ * @param   vertexIndices  array of indices in the vertices describing elements
+ * @param   colors         array of color descriptions
+ */
+function ItemElements(vertices, vertexIndices, colors, animation) {
+   Item.call(this, vertices, colors, animation);
 
    this.vertexIndices = new Uint16Array(vertexIndices);   
+
+   this.bufferVertexIndices = function() {
+      var buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.vertexIndices, gl.STATIC_DRAW);
+
+      return buffer;
+   }
 }
 
-
-Cube.prototype = Object.create(Item.prototype);
-Cube.prototype.constructor = Cube;
-
-/**
- * @return                 webgl buffer (element)
- */
-Cube.prototype.bufferVertexIndices = function() {
-   var buffer = gl.createBuffer();
-   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.vertexIndices, gl.STATIC_DRAW);
-
-   return buffer;
-}
+ItemElements.prototype = Object.create(Item.prototype);
+ItemElements.prototype.constructor = ItemElements;
 
 
-/**
- * draws the cube
- */
-Cube.prototype.draw = function() {
+ItemElements.prototype.draw = function() {
    mat4.identity(this.matrix);   
 
    var bufferVertices = this.bufferVertices(gl);
 
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
-   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, bufferVertices.vertexLength, gl.FLOAT, false, 0, 0);
+   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 
    var bufferColors = this.bufferColors(gl);
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColors);
-   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, bufferColors.colorLength, gl.FLOAT, false, 0, 0);
+   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
    var bufferVertexIndices = this.bufferVertexIndices();
    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferVertexIndices);
@@ -474,49 +351,81 @@ Cube.prototype.draw = function() {
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// sphere
+// shapes
 
 
+/**
+ * @param   s              size of an edge of the cube
+ */
+function Cube(s, colors, animation) {
+   ItemElements.call(this, [
+         0,  0,  s,     s,  0,  s,     s,  s,  s,     0,  s,  s,
+         0,  0,  0,     0,  s,  0,     s,  s,  0,     s,  0,  0,
+         0,  s,  0,     0,  s,  s,     s,  s,  s,     s,  s,  0,
+         0,  0,  0,     s,  0,  0,     s,  0,  s,     0,  0,  s,
+         s,  0,  0,     s,  s,  0,     s,  s,  s,     s,  0,  s,
+         0,  0,  0,     0,  0,  s,     0,  s,  s,     0,  s,  0
+     ], [ // front back top bottom right left
+         0,  1,  2,  0,  2,  3, 
+         4,  5,  6,  4,  6,  7, 
+         8,  9, 10,  8, 10, 11, 
+        12, 13, 14, 12, 14, 15,
+        16, 17, 18, 16, 18, 19, 
+        20, 21, 22, 20, 22, 23  
+      ], colors, animation);
+}
+
+Cube.prototype = Object.create(ItemElements.prototype);
+Cube.prototype.constructor = Cube;
 
 
+/**
+ * @param   radius         radius of the circle to create
+ * @param   bands          number of sections to split the sphere into
+ */
+function Sphere(radius, bands, colors, animation) {
+   var vertices = [], normals = [], textureCoord = [];
 
+   // latitudes
+   for (var slice = 0; slice <= bands; slice++) {
+      var theta = slice * Math.PI / bands,
+          sinTheta = Math.sin(theta),
+          cosTheta = Math.cos(theta);
 
+      // longitudes
+      for (var arc = 0; arc <= bands; arc++) {
+         var phi = arc * 2 * Math.PI / bands,
+             sinPhi = Math.sin(phi),
+             cosPhi = Math.cos(phi);
 
+         var x = cosPhi * sinTheta,
+             y = cosTheta,
+             z = sinPhi * sinTheta,
+             u = 1 - (arc / bands),
+             v = 1 - (slice / bands);
 
+         normals.push(x, y, z);
+         textureCoord.push(u, v);
+         vertices.push(radius * x, radius * y, radius * z);
+      }
+   }
 
+   var vertexIndices = [];
+   for (var slice = 0; slice < bands; slice++) {
+      for (var arc = 0; arc < bands; arc++) {
+         var first = (slice * (bands + 1)) + arc,
+             second = first + bands + 1;
 
+         vertexIndices.push(first, second, first + 1, second, second + 1, first + 1);
+      }
+   }
 
+   ItemElements.call(this, vertices, vertexIndices, colors, animation);
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Sphere.prototype = Object.create(ItemElements.prototype);
+Sphere.prototype.constructor = Sphere;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -527,6 +436,4 @@ function setMatrixUniforms() {
    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 }
-
-
 
