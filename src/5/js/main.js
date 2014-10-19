@@ -23,56 +23,8 @@ window.onload = function initialise() {
    initialiseGL(can);
    initialiseShaders();
 
+   items = [new Cube(1, 'texture/nehe.gif')];
 
-   var tem = [1, 1, 1, 1];
-
-   col = [];
-
-   for (var i = 0; i < 441; i++) {
-      col = col.concat(tem);
-   }
-   
-
-   // building color array
-   
-   colors = [ // front back top bottom right left
-      [1,  0,  0,  1],
-      [1,  1,  0,  1],
-      [0,  1,  0,  1],
-      [1, .5, .5,  1],
-      [1,  0,  1,  1],
-      [0,  0,  1,  1],
-    ];
-   
-   var unpackedColors = [];
-   for (var i in colors) {
-   var color = colors[i];
-      for (var j = 0; j < 4; j++) {
-         unpackedColors = unpackedColors.concat(color);
-      }
-   } 
-   
-   items = initialiseItems([new Item([
-       0,  1,  0,
-      -1, -1,  0,
-       1, -1,  0
-   ], [
-       1,  0,  0,  1,
-       0,  1,  0,  1,
-       0,  0,  1,  1
-   ]), new Item([
-       1,  1,  0,
-      -1,  1,  0,
-       1, -1,  0,
-      -1, -1,  0
-   ], [
-       1,  0,  0,  1,
-       0,  1,  0,  1,
-       1,  0,  1,  1,
-       1,  0,  1,  1
-   ]), new Cube(1, unpackedColors), 
-       new Sphere(1, 20, col)]);
- 
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
 
@@ -124,14 +76,13 @@ function initialiseShaders() {
    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-   // shader for interpolating across colours
-   shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, 'aVertexColor');
-   gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+   // shader for interpolating across textures
+   shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
+   gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, 'uPMatrix');
    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
 }
-
 
 
 
@@ -168,9 +119,9 @@ function animate() {
    
       // stuff to do every tick here
 
-      for (var i = 0; i < items.length; i++) {
-         items[i].animate();
-      }
+//      for (var i = 0; i < items.length; i++) {
+//         items[i].animate();
+//      }
    }
    animate.timeLast = timeNow;
 }
@@ -183,7 +134,7 @@ function drawScene() {
    gl.viewport(0, 0, gl.width, gl.height);
    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-   mat4.perspective(pMatrix, 90, gl.width / gl.height, 0.1, 100);
+   mat4.perspective(pMatrix, 45, gl.width / gl.height, 0.1, 100);
  
    // moving the perspective based on cursor location
    mat4.translate(pMatrix, pMatrix, [0, 0, -7])
@@ -193,35 +144,15 @@ function drawScene() {
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
 
-   // triangle
-   items[0].pushMatrix([
-         mat4.translate(mvMatrix, mvMatrix,[-1.5, 0, -7]),
-         mat4.translate(mvMatrix, mvMatrix,[-3, 0, 2])]);
-   
-   items[0].draw();
-   mvMatrix = mat4.create();
-
-   // plane
-   items[1].pushMatrix([
-         mat4.translate(mvMatrix, mvMatrix, [0, 0, -7]),
-         mat4.rotate(mvMatrix, mvMatrix, 1, [1, 0, 0])]);
-   items[1].draw();
-   mvMatrix = mat4.create();
 
    // cube
-   items[2].pushMatrix([
+   items[0].pushMatrix([
          mat4.translate(mvMatrix, mvMatrix, [1, 0, -5]),
          mat4.rotate(mvMatrix, mvMatrix, 1, [1, 1, 0])]);
 
-   items[2].draw();
+   items[0].draw();
    mvMatrix = mat4.create();
 
-   // spehere
-   items[3].pushMatrix([
-         mat4.translate(mvMatrix, mvMatrix, [2, 0, -2])]);
-
-   items[3].draw();
-   mvMatrix = mat4.create();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,12 +163,33 @@ function drawScene() {
  * @param   vertices       array of vertex descriptions
  * @param   colors         array of color descriptions
  */
-function Item(vertices, colors, animation) {
+function Item(vertices, textureURL, textureCoord, animation) {
    this.vertices = new Float32Array(vertices);
    this.vertexCount = vertices.length / 3;
+   
+   if (textureURL) {
+      this.texture = gl.createTexture();
+      this.texture.image = new Image();
 
-   this.colors = new Float32Array(colors);
-   this.colorCount = colors.length / 4;
+      // passing texture to function
+      _texture = this.texture;
+
+      this.texture.image.onload = function() {
+
+         gl.bindTexture(gl.TEXTURE_2D, _texture);
+         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, _texture.image);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+         gl.bindTexture(gl.TEXTURE_2D, null);
+      }
+
+      this.texture.image.src = textureURL;
+
+      this.textureCoord = new Float32Array(textureCoord);
+      this.textureCoordCount = textureCoord.length / 2;
+   }
+
 
    this.animation = animation;
    this.matrix = mat4.create();
@@ -252,11 +204,11 @@ function Item(vertices, colors, animation) {
       return buffer;
    }
 
-   this.bufferColors = function() {
+   this.bufferTextureCoord = function() {
       var buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
-      buffer.colorCount = this.colorCount;
+      gl.bufferData(gl.ARRAY_BUFFER, this.textureCoord, gl.STATIC_DRAW);
+      buffer.textureCoordCount = this.textureCoordCount;
 
       return buffer;
    }
@@ -286,26 +238,24 @@ Item.prototype.draw = function() {
    mat4.identity(this.matrix);   
 
    var bufferVertices = this.bufferVertices(gl);
-
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+     
+   var bufferTextureCoord = this.bufferTextureCoord();
+   gl.bindBuffer(gl.ARRAY_BUFFER, buffertextureCoord);
+   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
-   var bufferColors = this.bufferColors(gl);
-   gl.bindBuffer(gl.ARRAY_BUFFER, bufferColors);
-   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+   gl.activeTexture(gl.TEXTURE0);
+   gl.bindTexture(gl.TEXTURE_2D, this.texture);
+   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
    setMatrixUniforms(gl, shaderProgram);
    gl.drawArrays(gl.TRIANGLE_STRIP, 0, bufferVertices.vertexCount);
 }
 
 
-Item.prototype.animate = function() {
-//   this.animation();
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// element driven item
+// element driven item decorator
 
 
 /**
@@ -313,8 +263,8 @@ Item.prototype.animate = function() {
  * @param   vertexIndices  array of indices in the vertices describing elements
  * @param   colors         array of color descriptions
  */
-function ItemElements(vertices, vertexIndices, colors, animation) {
-   Item.call(this, vertices, colors, animation);
+function ItemElements(vertices, vertexIndices, textureURL, textureCoord, animation) {
+   Item.call(this, vertices, textureURL, textureCoord, animation);
 
    this.vertexIndices = new Uint16Array(vertexIndices);   
 
@@ -335,17 +285,22 @@ ItemElements.prototype.draw = function() {
    mat4.identity(this.matrix);   
 
    var bufferVertices = this.bufferVertices(gl);
-
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-
-   var bufferColors = this.bufferColors(gl);
-   gl.bindBuffer(gl.ARRAY_BUFFER, bufferColors);
-   gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
    var bufferVertexIndices = this.bufferVertexIndices();
    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferVertexIndices);
 
+   var bufferTextureCoord = this.bufferTextureCoord();
+   gl.bindBuffer(gl.ARRAY_BUFFER, bufferTextureCoord);
+   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+   gl.activeTexture(gl.TEXTURE0);
+   gl.bindTexture(gl.TEXTURE_2D, this.texture);
+   gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+
+   
    setMatrixUniforms();
    gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
 }
@@ -358,7 +313,9 @@ ItemElements.prototype.draw = function() {
 /**
  * @param   s              size of an edge of the cube
  */
-function Cube(s, colors, animation) {
+function Cube(s, textureURL, animation) {
+   // all values given in order: front back top bottom right left
+
    ItemElements.call(this, [
          0,  0,  s,     s,  0,  s,     s,  s,  s,     0,  s,  s,
          0,  0,  0,     0,  s,  0,     s,  s,  0,     s,  0,  0,
@@ -366,14 +323,21 @@ function Cube(s, colors, animation) {
          0,  0,  0,     s,  0,  0,     s,  0,  s,     0,  0,  s,
          s,  0,  0,     s,  s,  0,     s,  s,  s,     s,  0,  s,
          0,  0,  0,     0,  0,  s,     0,  s,  s,     0,  s,  0
-     ], [ // front back top bottom right left
+     ], [ 
          0,  1,  2,  0,  2,  3, 
          4,  5,  6,  4,  6,  7, 
          8,  9, 10,  8, 10, 11, 
         12, 13, 14, 12, 14, 15,
         16, 17, 18, 16, 18, 19, 
         20, 21, 22, 20, 22, 23  
-      ], colors, animation);
+      ], textureURL, [
+         0,  0,         1,  0,         1,  1,         0,  1,
+         1,  0,         1,  1,         0,  1,         0,  0,
+         0,  1,         0,  0,         1,  0,         1,  1,
+         1,  1,         0,  1,         0,  0,         1,  0,
+         1,  0,         1,  1,         0,  1,         0,  0,
+         0,  0,         1,  0,         1,  1,         0,  1
+      ], animation);
 }
 
 Cube.prototype = Object.create(ItemElements.prototype);
@@ -384,7 +348,7 @@ Cube.prototype.constructor = Cube;
  * @param   radius         radius of the circle to create
  * @param   bands          number of sections to split the sphere into
  */
-function Sphere(radius, bands, colors, animation) {
+function Sphere(radius, bands, textureURL, animation) {
    var vertices = [], normals = [], textureCoord = [];
 
    // latitudes
@@ -405,9 +369,9 @@ function Sphere(radius, bands, colors, animation) {
              u = 1 - (arc / bands),
              v = 1 - (slice / bands);
 
-         normals.push(x, y, z);
-         textureCoord.push(u, v);
          vertices.push(radius * x, radius * y, radius * z);
+         textureCoord.push(u, v);
+         normals.push(x, y, z);
       }
    }
 
@@ -421,7 +385,7 @@ function Sphere(radius, bands, colors, animation) {
       }
    }
 
-   ItemElements.call(this, vertices, vertexIndices, colors, animation);
+   ItemElements.call(this, vertices, vertexIndices, textureURL, textureCoord, animation);
 }
 
 Sphere.prototype = Object.create(ItemElements.prototype);
