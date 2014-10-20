@@ -2,7 +2,25 @@
 // initialisation
 
 
-var gl, shaderProgram, items, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
+var gl, shaderProgram, items = {}, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
+
+
+var mvMatrixStack = [];
+
+function mvMatrixPush() {
+   var copy = mat4.create();
+   mat4.copy(copy, mvMatrix);
+   mvMatrixStack.push(copy);
+}
+
+function mvMatrixPop() {
+   if (mvMatrixStack.length == 0) {
+      throw "Invalid popMatrix!";
+   }
+   mvMatrix = mvMatrixStack.pop();
+}
+
+
 
 
 window.onload = function initialise() {
@@ -22,15 +40,50 @@ window.onload = function initialise() {
 
    initialiseGL(can);
    initialiseShaders();
+   
+   items = {
+      sun : new Sphere(1, 'texture/sunmap.jpg', function(){}, function animation(elapsed) {
+         if (typeof this.animation.rotation === 'undefined') {
+            this.animation.rotation = 0;     
+         }
+      
+         this.animation.rotation += elapsed / 10000;
 
-   items = [new Sphere(1, 'texture/crate.gif')];
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation, [0, 1, 0]);
+         
+      }),
+      mercury : new Sphere(.2, 'texture/mercurymap.jpg', function position() {
+        mat4.translate(mvMatrix, mvMatrix, [0, 0, 2]);
 
+      }, function(elapsed) {
+         if (typeof this.animation.rotation === 'undefined') {
+            this.animation.rotation = 0;     
+         }
+      
+         this.animation.rotation += elapsed / 1000;
+
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation * 2, [0, 1, 0]);
+         mat4.translate(mvMatrix, mvMatrix, [0, 0, 2]);
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation * 8, [0, 1, 0]);
+
+         mat4.translate(mvMatrix, mvMatrix, [0, 0, -2]);
+
+         
+      })
+   };
+
+ 
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
 
    animate.timeLast = 0;
-   tick();
+
+   var loop = setInterval(tick, 1000 / 60);
 }
+
+
+
+
 
 
 /**
@@ -104,10 +157,7 @@ function initialiseItems(items) {
  * keeps in sync with browser animation frames
  */
 function tick() {
-   requestAnimationFrame(tick);
-
-   drawScene();
-   animate();
+   requestAnimationFrame(drawScene);
 }
 
 
@@ -121,10 +171,9 @@ function animate() {
       var elapsed = timeNow - animate.timeLast;
    
       // stuff to do every tick here
-
-//      for (var i = 0; i < items.length; i++) {
-//         items[i].animate();
-//      }
+      for (var key in items) {
+         items[key].animation(elapsed);
+      }
    }
    animate.timeLast = timeNow;
 }
@@ -138,24 +187,24 @@ function drawScene() {
    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
    mat4.perspective(pMatrix, 45, gl.width / gl.height, .1, 100);
- 
-   // moving the perspective based on cursor location
    mat4.translate(pMatrix, pMatrix, [0, 0, -5])
+
+   // moving the perspective based on cursor location
    mat4.rotate(pMatrix, pMatrix, -.5 + pMovement.x, [0, 1, 0]);
    mat4.rotate(pMatrix, pMatrix, -.5 + pMovement.y, [1, 0, 0]);
-   mat4.translate(pMatrix, pMatrix, [0, 0, 5])
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
 
-   // cube
-   items[0].pushMatrix([
-         mat4.translate(mvMatrix, mvMatrix, [0, 0, -5]),
-//         mat4.rotate(mvMatrix, mvMatrix, 1, [1, 1, 1])
-   ]);
+   mvMatrixPush();
+   items.sun.animation(16);
+   items.sun.draw();
+   mvMatrixPop();
+   
+   mvMatrixPush();
+   items.mercury.animation(16);
 
-   items[0].draw();
-   mvMatrix = mat4.create();
-
+   items.mercury.draw();
+   mvMatrixPop();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -197,7 +246,7 @@ function Item(vertices, normals, textureURL, textureCoord, animation) {
    this.textureCoordCount = textureCoord.length / 2;
 
    this.animation = animation;
-   this.matrix = mat4.create();
+   this.positionMatrix = mat4.create();
    
 
    this.bufferVertices = function() {
@@ -234,10 +283,10 @@ Item.prototype.pushMatrix = function(matrixList) {
       var currentMatrix = mat4.create(), 
           newMatrix = mat4.create();
 
-      mat4.copy(currentMatrix, this.matrix);
+      mat4.copy(currentMatrix, this.positionMatrix);
       mat4.copy(newMatrix, matrixList[i]);
       
-      mat4.multiply(this.matrix, currentMatrix, newMatrix);
+      mat4.multiply(this.positionMatrix, currentMatrix, newMatrix);
    }
 }
 
@@ -246,8 +295,6 @@ Item.prototype.pushMatrix = function(matrixList) {
  * draws the item
  */
 Item.prototype.draw = function() {
-   mat4.identity(this.matrix);   
-
    var bufferVertices = this.bufferVertices();
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
@@ -281,6 +328,8 @@ Item.prototype.draw = function() {
 function ItemElements(vertices, vertexIndices, normals, textureURL, textureCoord, animation) {
    Item.call(this, vertices, normals, textureURL, textureCoord, animation);
 
+
+
    this.vertexIndices = new Uint16Array(vertexIndices);   
 
    this.bufferVertexIndices = function() {
@@ -296,7 +345,8 @@ ItemElements.prototype.constructor = ItemElements;
 
 
 ItemElements.prototype.draw = function() {
-   mat4.identity(this.matrix);   
+this.position();
+   
 
    var bufferVertices = this.bufferVertices();
    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
@@ -383,11 +433,13 @@ Cube.prototype.constructor = Cube;
  * @super   ItemElements
  * @param   radius         radius of the circle to create
  */
-function Sphere(radius, textureURL, animation) {
-   var bands = radius * 20, 
+function Sphere(radius, textureURL, position, animation) {
+   var bands = 30, 
        vertices = [], 
        normals = [], 
        textureCoord = [];
+
+   this.position = position;
 
    // latitudes
    for (var slice = 0; slice <= bands; slice++) {
