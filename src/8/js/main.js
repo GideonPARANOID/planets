@@ -2,23 +2,22 @@
 // initialisation
 
 
-var gl, shaderProgram, items = {}, mvMatrix = mat4.create(), pMatrix = mat4.create(), pMovement = { x : .5, y : .5 }; 
+// runs at 60fps
+// 100 seconds = 1 year (60 days)
 
 
-var mvMatrixStack = [];
 
-function mvMatrixPush() {
-   var copy = mat4.create();
-   mat4.copy(copy, mvMatrix);
-   mvMatrixStack.push(copy);
-}
+var gl, 
+    shaderProgram, 
+    mvMatrix = mat4.create(), 
+    mvMatrixStack = [],
+    pMatrix = mat4.create(), 
+    pMovement = { 
+      x : .5, 
+      y : .5 
+   }; 
 
-function mvMatrixPop() {
-   if (mvMatrixStack.length == 0) {
-      throw "Invalid popMatrix!";
-   }
-   mvMatrix = mvMatrixStack.pop();
-}
+var items; 
 
 
 window.onload = function initialise() {
@@ -39,34 +38,8 @@ window.onload = function initialise() {
    initialiseShaders();
    
    items = {
-      sun : new Sphere(1, 'texture/sunmap.jpg', function(){}, function animation(elapsed) {
-         if (typeof this.animation.rotation === 'undefined') {
-            this.animation.rotation = 0;     
-         }
-      
-         this.animation.rotation += elapsed / 10000;
-
-         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation, [0, 1, 0]);
-         
-      }),
-      mercury : new Sphere(.2, 'texture/mercurymap.jpg', function position() {
-        mat4.translate(mvMatrix, mvMatrix, [0, 0, 2]);
-
-      }, function(elapsed) {
-         if (typeof this.animation.rotation === 'undefined') {
-            this.animation.rotation = 0;     
-         }
-      
-         this.animation.rotation += elapsed / 1000;
-
-         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation * 2, [0, 1, 0]);
-         mat4.translate(mvMatrix, mvMatrix, [0, 0, 2]);
-         mat4.rotate(mvMatrix, mvMatrix, this.animation.rotation * 8, [0, 1, 0]);
-
-         mat4.translate(mvMatrix, mvMatrix, [0, 0, -2]);
-
-         
-      })
+      sun : new Planet(1, 'texture/sunmap.jpg', 0, -100, 1, true),
+      mercury : new Planet(.2, 'texture/mercurymap.jpg', 2, 100, 30, false)
    };
 
  
@@ -121,23 +94,23 @@ function initialiseShaders() {
 
    gl.useProgram(shaderProgram);
 
-   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-   shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+   shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, 'aVertexNormal');
    gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
-   shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+   shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
    gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
-   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-   shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-   shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
-   shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
-   shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
-   shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
+   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, 'uPMatrix');
+   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
+   shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, 'uNMatrix');
+   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, 'uSampler');
+   shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, 'uUseLighting');
+   shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, 'uAmbientColor');
+   shaderProgram.pointLightingLocationUniform = gl.getUniformLocation(shaderProgram, 'uPointLightingLocation');
+   shaderProgram.pointLightingColorUniform = gl.getUniformLocation(shaderProgram, 'uPointLightingColor');
 }
 
 
@@ -185,6 +158,11 @@ function drawScene() {
 
    mat4.perspective(pMatrix, 45, gl.width / gl.height, .1, 100);
    mat4.translate(pMatrix, pMatrix, [0, 0, -5])
+
+   // lighting
+   gl.uniform3f(shaderProgram.ambientColorUniform, .1, .1, .1);  
+   gl.uniform3f(shaderProgram.pointLightingUniform,  0, 0, 0);
+   gl.uniform3f(shaderProgram.pointLightingColorUniform, .9, .9, .9);
 
    // moving the perspective based on cursor location
    mat4.rotate(pMatrix, pMatrix, -.5 + pMovement.x, [0, 1, 0]);
@@ -304,17 +282,6 @@ ItemElements.prototype.draw = function() {
    gl.bindTexture(gl.TEXTURE_2D, this.texture);
    gl.uniform1i(shaderProgram.samplerUniform, 0);
 
-   gl.uniform3f(shaderProgram.ambientColorUniform, .1, .1, .1);
-   var lightingDirection = [-.25, -.25, -1];
-
-   var adjustedLD = vec3.create(), otr = vec3.create();
-
-   vec3.normalize(adjustedLD, lightingDirection);
-   vec3.scale(adjustedLD, adjustedLD, -1);
-   
-   gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
-   gl.uniform3f(shaderProgram.directionalColorUniform, .9, .9, .9);
-
    setMatrixUniforms();
    gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
 }
@@ -326,51 +293,10 @@ ItemElements.prototype.draw = function() {
 
 /**
  * @super   ItemElements
- * @param   s              size of an edge of the cube
- */
-function Cube(s, textureURL, animation) {
-   // all values given in order: front back top bottom right left
-
-   ItemElements.call(this, [ // vertices
-         0,  0,  s,     s,  0,  s,     s,  s,  s,     0,  s,  s,
-         0,  0,  0,     0,  s,  0,     s,  s,  0,     s,  0,  0,
-         0,  s,  0,     0,  s,  s,     s,  s,  s,     s,  s,  0,
-         0,  0,  0,     s,  0,  0,     s,  0,  s,     0,  0,  s,
-         s,  0,  0,     s,  s,  0,     s,  s,  s,     s,  0,  s,
-         0,  0,  0,     0,  0,  s,     0,  s,  s,     0,  s,  0
-      ], [ //  vertex indices
-         0,  1,  2,  0,  2,  3, 
-         4,  5,  6,  4,  6,  7, 
-         8,  9, 10,  8, 10, 11, 
-        12, 13, 14, 12, 14, 15,
-        16, 17, 18, 16, 18, 19, 
-        20, 21, 22, 20, 22, 23  
-      ], [ // normals
-         0,  0,  1,     0,  0,  1,     0,  0,  1,     0,  0,  1,
-         0,  0, -1,     0,  0, -1,     0,  0, -1,     0,  0, -1,
-         0,  1,  0,     0,  1,  0,     0,  1,  0,     0,  1,  0,
-         0, -1,  0,     0, -1,  0,     0, -1,  0,     0, -1,  0,
-         1,  0,  0,     1,  0,  0,     1,  0,  0,     1,  0,  0,
-        -1,  0,  0,    -1,  0,  0,    -1,  0,  0,    -1,  0,  0,
-      ], textureURL, [
-         0,  0,         1,  0,         1,  1,         0,  1,
-         1,  0,         1,  1,         0,  1,         0,  0,
-         0,  1,         0,  0,         1,  0,         1,  1,
-         1,  1,         0,  1,         0,  0,         1,  0,
-         1,  0,         1,  1,         0,  1,         0,  0,
-         0,  0,         1,  0,         1,  1,         0,  1
-      ], animation);
-}
-
-Cube.prototype = Object.create(ItemElements.prototype);
-Cube.prototype.constructor = Cube;
-
-
-/**
- * @super   ItemElements
  * @param   radius         radius of the circle to create
+ * @param   flipNormals    boolean whether or not to invert the normals
  */
-function Sphere(radius, textureURL, position, animation) {
+function Sphere(radius, textureURL, position, animation, flipNormals) {
    var bands = 30, 
        vertices = [], 
        normals = [], 
@@ -398,7 +324,9 @@ function Sphere(radius, textureURL, position, animation) {
 
          vertices.push(radius * x, radius * y, radius * z);
          textureCoord.push(u, v);
-         normals.push(x, y, z);
+         flipNormals ? 
+            normals.push(-x, -y, -z) :
+            normals.push(x, y, z);
       }
    }
 
@@ -419,6 +347,40 @@ Sphere.prototype = Object.create(ItemElements.prototype);
 Sphere.prototype.constructor = Sphere;
 
 
+
+/**
+ * @param   radius         radius length of the planet
+ * @param   textureURL     texture resource path
+ * @param   distance       distance from the origin to orbit
+ * @param   yearLength     length of time for the planet to orbit origin in seconds
+ * @param   daysPerYear    number days in that year
+ * @param   sun            boolean whether the planet is a sun
+ */
+function Planet(radius, textureURL, distance, yearLength, daysPerYear, sun) {
+   Sphere.call(this, radius, textureURL, function position() {
+        mat4.translate(mvMatrix, mvMatrix, [0, 0, distance]);
+
+      }, function(elapsed) {
+         if (typeof this.animation.year === 'undefined') {
+            this.animation.year = 0;     
+         }
+     
+         // yearLength (seconds) * (pie / 2) / (1000 ms / 60 frames)
+         this.animation.year += (1 / yearLength) * Math.PI / (1000 / 30);
+         
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.year, [0, 1, 0]);
+
+         mat4.translate(mvMatrix, mvMatrix, [0, 0, distance]);
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.year * daysPerYear, [0, 1, 0]);
+         mat4.translate(mvMatrix, mvMatrix, [0, 0, -distance]); 
+      }, sun);
+}
+
+
+Planet.prototype = Object.create(Sphere.prototype);
+Planet.prototype.constructor = Planet;
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // tools
 
@@ -427,8 +389,23 @@ function setMatrixUniforms() {
    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
  
-   var normalMatrix = mat3.create();
-   mat3.normalFromMat4(normalMatrix, mvMatrix);  
-   gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+   var nMatrix = mat3.create();
+   mat3.normalFromMat4(nMatrix, mvMatrix);  
+   gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, nMatrix);
+}
+
+
+function mvMatrixPush() {
+   var copy = mat4.create();
+   mat4.copy(copy, mvMatrix);
+   mvMatrixStack.push(copy);
+}
+
+
+function mvMatrixPop() {
+   if (mvMatrixStack.length == 0) {
+      throw 'Invalid popMatrix!';
+   }
+   mvMatrix = mvMatrixStack.pop();
 }
 
