@@ -46,21 +46,3 @@ function getShader(gl, id) {
    }
 }
 
-
-/**
- * @return  object         description of viewport dimensions 
- */
-function getViewportDimensions() {
-   var e = window, a = 'inner';
-
-   if (!('innerWidth' in window)) {
-      a = 'client';
-      e = document.documentElement || document.body;
-   }
-   return { 
-      w : e[a + 'Width'], 
-      h : e[a + 'Height']
-   };
-}
-
-
