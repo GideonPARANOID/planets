@@ -24,7 +24,8 @@ var gl,
    paused = false;
 
 // constants
-var TEXTUREPATH = 'texture/',
+var SHADERPATH = 'shader/',
+   TEXTUREPATH = 'texture/',
    FRAMETIME = 1000 / 60;
 
 // content
@@ -46,7 +47,7 @@ window.onload = function initialise() {
       };
 
    initialiseGL(can);
-   initialiseProgram('per-fragment-lighting-fs', 'per-fragment-lighting-vs');
+   initialiseProgram(SHADERPATH + 'per-frag-frag.gsgl', SHADERPATH + 'per-frag-vert.gsgl');
    initialiseControls(can, loop);
 
    sat = new Planet(1, TEXTUREPATH + 'moon.gif', 4, .2, 250, 150, []);
@@ -93,9 +94,27 @@ function initialiseGL(can) {
 /**
  * does what it says on the tin
  */
-function initialiseProgram(fragmentShaderID, vertexShaderID) {
-   var shaderFragment = getShader(gl, fragmentShaderID),
-      shaderVertex = getShader(gl, vertexShaderID);
+function initialiseProgram(fragmentShaderURL, vertexShaderURL) {
+
+   // getting the shader source
+   function getShader(gl, url, type) {
+      var shader = gl.createShader(type),
+         request = new XMLHttpRequest();
+      request.open("GET", url, false);
+      request.send();
+
+      gl.shaderSource(shader, request.responseText);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+         throw new Exception(gl.getShaderInfoLog(shader));
+      }
+
+      return shader; 
+   }
+
+   var shaderFragment = getShader(gl, fragmentShaderURL, gl.FRAGMENT_SHADER),
+      shaderVertex = getShader(gl, vertexShaderURL, gl.VERTEX_SHADER);
       
    program = gl.createProgram();
 
@@ -116,6 +135,7 @@ function initialiseProgram(fragmentShaderID, vertexShaderID) {
    program.textureCoordAttribute = gl.getAttribLocation(program, 'aTextureCoord');
    gl.enableVertexAttribArray(program.textureCoordAttribute);
 
+   // linking shader variables
    program.pMatrixUniform = gl.getUniformLocation(program, 'uPMatrix');
    program.mvMatrixUniform = gl.getUniformLocation(program, 'uMVMatrix');
    program.nMatrixUniform = gl.getUniformLocation(program, 'uNMatrix');
@@ -134,22 +154,21 @@ function initialiseControls() {
    document.addEventListener('DOMMouseScroll', zoomPerspective, false);
    document.addEventListener('keypress', togglePause, false);
    
-   window.addEventListener('deviceorientation', rotatePerspectiveAlt, true);
-
-
-   // perspective shifting
-   function rotatePerspective(eve) {
-//      pMovement.x = (eve.clientX / can.width);
-  //    pMovement.y = eve.clientY / can.height);
-   }
-
-
+/*   window.addEventListener('deviceorientation', rotatePerspectiveAlt, true);
    function rotatePerspectiveAlt(eve) {
       pMovement.x = eve.gamma / 90;
       pMovement.y = -eve.beta / 90;
       pMovement.z = -eve.alpha / 90;
       console.log(eve);
+   }*/
+
+   // perspective shifting
+   function rotatePerspective(eve) {
+      pMovement.x = eve.clientX / can.width;
+      pMovement.y = eve.clientY / can.height;
    }
+
+
 
    // zooming
    function zoomPerspective(eve) {
@@ -196,7 +215,7 @@ function drawScene() {
    // moving the perspective based on cursor location
    mat4.rotate(pMatrix, pMatrix, pMovement.x, [0, 1, 0]);
    mat4.rotate(pMatrix, pMatrix, pMovement.y, [1, 0, 0]);
-   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
+//   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
    for (var key in items) {
