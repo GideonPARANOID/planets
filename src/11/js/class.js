@@ -159,7 +159,7 @@ function Star(radius, textureURL, daysPerYear, satellites) {
    }
 
    Sphere.call(this, radius, textureURL, function animation() {
-         if (typeof this.animation.year === 'undefined') {
+         if (typeof this.animation.day === 'undefined') {
             this.animation.day = 0;
          }
     
@@ -169,7 +169,6 @@ function Star(radius, textureURL, daysPerYear, satellites) {
 
          mvMatrixPush();
          mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
-         mvMatrixPop();
       });
 }
 
@@ -203,38 +202,32 @@ function Planet(radius, textureURL, distance, eccentricity, yearLength, daysPerY
             this.animation.year = 0;     
             this.animation.currentDistance = distance;
          }
-     
-         // if no distance, assume sun
-         if (distance) { 
-            if (!paused) {
-               var velocity = yearLength * .00001;
-
-               // kepler's first law
-               this.animation.currentDistance = 
-                  (distance * (1 + eccentricity)) / 
-                  (1 + (eccentricity * Math.cos(this.animation.year)));
-
-               // kepler's second law
-               this.animation.year += (FRAMETIME * distance * distance * velocity) /
-                  (this.animation.currentDistance * this.animation.currentDistance);               
-            } 
-           
-            mat4.translate(mvMatrix, mvMatrix, [
-               this.animation.currentDistance * Math.sin(this.animation.year), 
-               0, 
-               this.animation.currentDistance * Math.cos(this.animation.year)]);
-          } 
 
          if (!paused) {
+            var velocity = yearLength * .00001;
+
+            // kepler's first law
+            this.animation.currentDistance = 
+               (distance * (1 + eccentricity)) / 
+               (1 + (eccentricity * Math.cos(this.animation.year)));
+
+            // kepler's second law
+            this.animation.year += (FRAMETIME * distance * distance * velocity) /
+               (this.animation.currentDistance * this.animation.currentDistance);               
+
             this.animation.day += daysPerYear * .001;
-         }
+         } 
+        
+         mat4.translate(mvMatrix, mvMatrix, [
+            this.animation.currentDistance * Math.sin(this.animation.year), 
+            0, 
+            this.animation.currentDistance * Math.cos(this.animation.year)]);
+
 
          // we wouldn't want the spinning of the planet to influence any satellites
          mvMatrixPush();
-         mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
-         mvMatrixPop();
-
-      }, false);
+         mat4.rotate(mvMatrix, mvMatrix, -this.animation.day, [0, 1, 0]);
+      });
 }
 
 Planet.prototype = Object.create(Sphere.prototype);
@@ -267,6 +260,10 @@ Planet.prototype.draw = Star.prototype.draw = function() {
 
    setMatrixUniforms();
    gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
+
+
+   // removing the star's/planet's spin
+   mvMatrixPop();
 
    for (var i = 0; i < this.satellites.length; i++) {
       mvMatrixPush();

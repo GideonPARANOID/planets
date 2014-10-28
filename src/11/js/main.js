@@ -67,11 +67,11 @@ window.onload = function initialise() {
          new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,     80,  -60, []),
          new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,     60,   60, []),
          new Planet( 2,    TEXTUREPATH + 'jupitermap.jpg',  16,    .1,    100,  100, [sat]),
-         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .4,    120,  100, []),
+         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .1,    120,  100, []),
          new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,     20,  150, []),
          new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,     10,  200, [])
    ])];
- 
+
 
    loop.handle = setInterval(loop.func, FRAMETIME);
 }
