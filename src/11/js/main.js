@@ -48,6 +48,13 @@ window.onload = function initialise() {
 
    initialiseGL(can);
    initialiseProgram(SHADERPATH + 'per-frag-frag.gsgl', SHADERPATH + 'per-frag-vert.gsgl');
+
+   gl.clearColor(0, 0, 0, 1);
+   gl.enable(gl.DEPTH_TEST);
+
+   gl.useProgram(program);
+   initialiseLighting();
+   
    initialiseControls(can, loop);
 
    sat = new Planet(1, TEXTUREPATH + 'moon.gif', 4, .2, 250, 150, []);
@@ -55,18 +62,16 @@ window.onload = function initialise() {
 
    items = [
       new Star(   4,    TEXTUREPATH + 'sunmap.jpg',       2, [
-      new Planet(  .2,  TEXTUREPATH + 'mercurymap.jpg',   5,    .5,    100,   30, []),
-      new Planet(  .3,  TEXTUREPATH + 'venusmap.jpg',     7,    .5,   -200,   20, []),
-      new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,     80,  -60, []),
-      new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,     60,   60, []),
-      new Planet( 2,    TEXTUREPATH + 'jupitermap.jpg',  16,    .1,    100,  100, [sat]),
-      new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .4,    120,  100, []),
-      new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,     20,  150, []),
-      new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,     10,  200, [])
-                        ])];
+         new Planet(  .2,  TEXTUREPATH + 'mercurymap.jpg',   5,    .5,    100,   30, []),
+         new Planet(  .3,  TEXTUREPATH + 'venusmap.jpg',     7,    .5,   -200,   20, []),
+         new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,     80,  -60, []),
+         new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,     60,   60, []),
+         new Planet( 2,    TEXTUREPATH + 'jupitermap.jpg',  16,    .1,    100,  100, [sat]),
+         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .4,    120,  100, []),
+         new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,     20,  150, []),
+         new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,     10,  200, [])
+   ])];
  
-   gl.clearColor(0, 0, 0, 1);
-   gl.enable(gl.DEPTH_TEST);
 
    loop.handle = setInterval(loop.func, FRAMETIME);
 }
@@ -169,8 +174,6 @@ function initialiseControls() {
       pMovement.y = eve.clientY / can.height;
    }
 
-
-
    // zooming
    function zoomPerspective(eve) {
       eve.preventDefault();
@@ -186,6 +189,14 @@ function initialiseControls() {
       }
    }
 }
+
+
+function initialiseLighting() {
+   gl.uniform3f(program.pointLightingLocationUniform,  0, 0, 0);
+   gl.uniform3f(program.pointLightingDiffuseColorUniform, .5, .5, .5);
+   gl.uniform3f(program.pointLightingSpecularColorUniform, .5, .5, .5);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,9 +217,6 @@ function drawScene() {
    mat4.rotate(pMatrix, pMatrix, pMovement.x, [0, 1, 0]);
    mat4.rotate(pMatrix, pMatrix, pMovement.y, [1, 0, 0]);
 //   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
-
-      
-   gl.useProgram(program);
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
    for (var i = 0; i < items.length; i++) {

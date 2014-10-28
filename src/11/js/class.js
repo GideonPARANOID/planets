@@ -153,9 +153,6 @@ function Star(radius, textureURL, daysPerYear, satellites) {
 
    this.lighting = function() {
       gl.uniform3f(program.ambientColorUniform, .9, .9, .9);  
-      gl.uniform3f(program.pointLightingLocationUniform,  0, 0, 0);
-      gl.uniform3f(program.pointLightingDiffuseColorUniform, 0, 0, 0);
-      gl.uniform3f(program.pointLightingSpecularColorUniform, 0, 0, 0);
 
       gl.uniform1i(program.samplerUniform, 0);
       gl.uniform1f(program.materialShininessUniform, 5);
@@ -193,10 +190,7 @@ function Planet(radius, textureURL, distance, eccentricity, yearLength, daysPerY
 
    this.lighting = function() {
       gl.uniform3f(program.ambientColorUniform, .1, .1, .1);  
-      gl.uniform3f(program.pointLightingLocationUniform,  0, 0, 0);
-      gl.uniform3f(program.pointLightingDiffuseColorUniform, .5, .5, .5);
-      gl.uniform3f(program.pointLightingSpecularColorUniform, .5, .5, .5);
-
+     
       gl.uniform1i(program.samplerUniform, 0);
       gl.uniform1f(program.materialShininessUniform, 5);
    }  
