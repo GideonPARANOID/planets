@@ -1,9 +1,6 @@
 /**
  * @author (gij2) gideon mw jones
  * @created 2014-10-15
- * @notes
- *    should run at 60fps
- *    100 seconds = 1 year (60 days)
  */
 
 'use strict';
@@ -15,10 +12,10 @@ var gl,
    mvMatrix = mat4.create(), 
    mvMatrixStack = [],
    pMatrix = mat4.create(), 
-   pMovement = { 
-      x : 0, 
-      y : 0,
-      z : 0,
+   pMovement = { // default mouse position assumes the middle of the screen
+      x : .5, 
+      y : .5,
+      z : .5,
       scroll : -50
    },
    paused = false;
@@ -58,19 +55,19 @@ window.onload = function initialise() {
    
    initialiseControls(can, loop);
 
-   sat = new Planet(1, TEXTUREPATH + 'moon.gif', 4, .2, 250, 150, []);
+   sat = new Planet(1, TEXTUREPATH + 'moon.gif', 4, .2, 0, 250, 150, null, []);
    rings = new Rings(20, TEXTUREPATH + 'ringsRGBA.png', function() {}, function() {});
 
    items = [
       new Star(   4,    TEXTUREPATH + 'sunmap.jpg',       2, [
-         new Planet(  .2,  TEXTUREPATH + 'mercurymap.jpg',   5,    .5,    100,   30, []),
-         new Planet(  .3,  TEXTUREPATH + 'venusmap.jpg',     7,    .5,   -200,   20, []),
-         new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,     80,  -60, []),
-         new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,     60,   60, []),
-         new Planet(   2,  TEXTUREPATH + 'jupitermap.jpg',  16,    .1,    100,  100, [sat]),
-         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .1,    120,  100, []),
-         new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,     20,  150, []),
-         new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,     10,  200, [])
+         new Planet(  .2,  TEXTUREPATH + 'mercurymap.jpg',   5,    .5,   0,    100,   30, null, []),
+         new Planet(  .3,  TEXTUREPATH + 'venusmap.jpg',     7,    .5,   0,   -200,   20, null, []),
+         new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,   0,     80,  -60, null, []),
+         new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,   0,     60,   60, null, []),
+         new Planet(   2,  TEXTUREPATH + 'jupitermap.jpg',  16,    .1,  .1,     10,  100, rings, [sat]),
+         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .1,   0,    120,  100, null, []),
+         new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,   0,     20,  150, null, []),
+         new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,   0,     10,  200, null, [])
    ])];
 
    loop.handle = setInterval(loop.func, FRAMETIME);
@@ -214,26 +211,14 @@ function drawScene() {
    mat4.translate(pMatrix, pMatrix, [0, 0, pMovement.scroll])
 
    // moving the perspective based on cursor location
-   mat4.rotate(pMatrix, pMatrix, pMovement.x, [0, 1, 0]);
-   mat4.rotate(pMatrix, pMatrix, pMovement.y, [1, 0, 0]);
-//   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
+   mat4.rotate(pMatrix, pMatrix, pMovement.x - .5, [0, 1, 0]);
+   mat4.rotate(pMatrix, pMatrix, pMovement.y - .5, [1, 0, 0]);
+   //   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
 
-
-   gl.disable(gl.DEPTH_TEST);
-
-   gl.enable(gl.BLEND);
-   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-
-   rings.draw();
-
-   gl.disable(gl.BLEND);
-   gl.enable(gl.DEPTH_TEST);
 
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
    for (var i = 0; i < items.length; i++) {
-
       mvMatrixPush();
       items[i].draw();
 

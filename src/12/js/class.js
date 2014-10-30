@@ -1,4 +1,7 @@
-
+/**
+ * @author (gij2) gideon mw jones
+ * @created 2014-10-25
+ */
 
 'use strict';
 
@@ -212,13 +215,53 @@ function Rings(size, textureURL, animation, lighting) {
       ], textureURL, [ // texture coords
          0,  1,         0,  0,         1,  0,         1,  1,
          1,  1,         0,  1,         0,  0,         1,  0,
-      ], animation, lighting);  
+      ], function animation() {
+         if (typeof this.animation.day === 'undefined') {
+            this.animation.day = 0;
+         }
+
+         if (!paused) {
+            this.animation.day += 100 * .001;
+         }
+
+         mvMatrixPush();
+
+         mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
+
+      }, lighting);  
 }
 
 Rings.prototype = Object.create(ItemElements.prototype);
 Rings.prototype.constructor = Rings;
 
 
+Rings.prototype.draw = function() {
+   this.lighting();
+   this.animation();
+
+   gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferVertices);
+   gl.vertexAttribPointer(program.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.bufferVertexIndices);
+
+   gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferNormals);
+   gl.vertexAttribPointer(program.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+   
+   gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferTextureCoord);
+   gl.vertexAttribPointer(program.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+   gl.activeTexture(gl.TEXTURE0);
+   gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+   // rings use alpha
+   gl.enable(gl.BLEND);
+   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);      
+
+   setMatrixUniforms();
+   gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
+
+   gl.disable(gl.BLEND);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // celestial stuff
@@ -264,11 +307,21 @@ Star.prototype.constructor = Star;
  * @param   textureURL     @see ItemElements
  * @param   distance       number as the distance from the star/planet it is 'owned' by
  * @param   eccentricity   number describing the eccentricity of the orbit (circle is 0)
+ * @param   axis           number radians angle for the planet to spin at
  * @param   yearLength     number length of time for the planet to orbit origin (arbitrary)
+ * @param   daysPerYear    number of days in that year
+ * @param   rings          @see Rings
  * @param   satellites     array of Planets 'owned' by a planet
  */
-function Planet(radius, textureURL, distance, eccentricity, yearLength, daysPerYear, satellites) {
+function Planet(radius, textureURL, distance, eccentricity, axis, yearLength, daysPerYear, rings, satellites) {
+  
+   if (rings) {
+      this.rings = rings;
+      this.rings.axis = axis;
+   }
+   
    this.satellites = satellites;
+   
    
    (CUBIVERSE ? Cube : Sphere).call(this, radius, textureURL, function animation() {
          if (typeof this.animation.year === 'undefined') {
@@ -299,7 +352,11 @@ function Planet(radius, textureURL, distance, eccentricity, yearLength, daysPerY
 
 
          // we wouldn't want the spinning of the planet to influence any satellites
+         // popped off when drawing satellites
          mvMatrixPush();
+
+         // spin axis orientation
+         mat4.rotate(mvMatrix, mvMatrix, axis, [1, 0, 0]);
          mat4.rotate(mvMatrix, mvMatrix, -this.animation.day, [0, 1, 0]);
 
       }, function lighting() {
@@ -339,9 +396,12 @@ Planet.prototype.draw = Star.prototype.draw = function() {
    setMatrixUniforms();
    gl.drawElements(gl.TRIANGLES, this.vertexIndices.length, gl.UNSIGNED_SHORT, 0);
 
-
    // removing the star's/planet's spin
    mvMatrixPop();
+
+   if (this.rings) {      
+      rings.draw();    
+   }
 
    for (var i = 0; i < this.satellites.length; i++) {
       mvMatrixPush();
