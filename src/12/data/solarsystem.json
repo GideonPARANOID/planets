@@ -1,0 +1,111 @@
+[
+   {
+      "type" : "Star",
+      "textureURL" : "sunmap.jpg",
+      "radius" : 4,
+      "daysPerYear" : 2,
+      "satellites" : [
+         {
+            "type" : "Planet",
+            "radius" : 0.2,
+            "textureURL" : "mercurymap.jpg",
+            "distance" : 5,
+            "eccentricity" : 0.5,
+            "movementY" : 2,
+            "velocity" : 100,
+            "daysPerYear" : 30,
+            "axis" : 0, 
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 0.3,
+            "textureURL" : "venusmap.jpg",
+            "distance" : 5,
+            "eccentricity" : 0.5,
+            "movementY" : 2,
+            "velocity" : -200,
+            "daysPerYear" : 20,
+            "axis" : 0,
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 0.5,
+            "textureURL" : "earthmap.jpg",
+            "distance" : 10,
+            "eccentricity" : 0.1,
+            "movementY" : 2,
+            "velocity" : 80,
+            "daysPerYear" : -60,
+            "axis" : 0.1,
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 0.6,
+            "textureURL" : "marsmap.jpg",
+            "distance" : 12,
+            "eccentricity" : 0.2,
+            "movementY" : 2,
+            "velocity" : 60,
+            "daysPerYear" : 60,
+            "axis" : 0,
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 2,
+            "textureURL" : "jupitermap.jpg",
+            "distance" : 16,
+            "eccentricity" : 0.1,
+            "movementY" : 2,
+            "velocity" : 100,
+            "daysPerYear" : 100,
+            "axis" : 0.1,
+            "rings" : {
+               "type" : "Rings",
+               "size" : 20,
+               "textureURL" : "ringsRGBA.png"
+            },
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 2.1,
+            "textureURL" : "saturnmap.jpg",
+            "distance" : 22,
+            "eccentricity" : 0.1,
+            "movementY" : 1,
+            "velocity" : 120,
+            "daysPerYear" : 100,
+            "axis" : 0,
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 1.5,
+            "textureURL" : "uranusmap.jpg",
+            "distance" : 28,
+            "eccentricity" : 0.2,
+            "movementY" : 2, 
+            "velocity" : 20,
+            "daysPerYear" : 150,
+            "axis" : 0,
+            "rings" : null,
+            "satellites" : []
+         }, {
+            "type" : "Planet",
+            "radius" : 1.8,
+            "textureURL" : "neptunemap.jpg",
+            "distance" : 35,
+            "eccentricity" : 0.2,
+            "movementY" : 3,
+            "velocity" : 10,
+            "daysPerYear" : 200,
+            "axis" : 3,
+            "rings" : null,
+            "satellites" : []
+         }
+      ]
+   }
+]

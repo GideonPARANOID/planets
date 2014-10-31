@@ -195,12 +195,21 @@ function Cube(size, textureURL, animation, lighting) {
       ], animation, lighting);
 }
 
-
 Cube.prototype = Object.create(ItemElements.prototype);
 Cube.prototype.constructor = Cube;
 
 
-function Rings(size, textureURL, animation, lighting) {
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// celestial stuff
+
+
+/**
+ * @super   ItemElements
+ * @param   size           number diameter
+ * @param   textureURL     @see ItemElements
+ * @param   lighting       @see ItemElements
+ */
+function Rings(size, textureURL, lighting) {
     var s = size / 2;
 
    ItemElements.call(this, [ // vertices
@@ -226,6 +235,7 @@ function Rings(size, textureURL, animation, lighting) {
 
          mvMatrixPush();
 
+         mat4.rotate(mvMatrix, mvMatrix, this.axis, [1, 0, 0]);
          mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
 
       }, lighting);  
@@ -236,7 +246,7 @@ Rings.prototype.constructor = Rings;
 
 
 Rings.prototype.draw = function() {
-   this.lighting();
+   //this.lighting();
    this.animation();
 
    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferVertices);
@@ -262,9 +272,6 @@ Rings.prototype.draw = function() {
 
    gl.disable(gl.BLEND);
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// celestial stuff
 
 
 /**
@@ -313,15 +320,14 @@ Star.prototype.constructor = Star;
  * @param   rings          @see Rings
  * @param   satellites     array of Planets 'owned' by a planet
  */
-function Planet(radius, textureURL, distance, eccentricity, axis, yearLength, daysPerYear, rings, satellites) {
+function Planet(radius, textureURL, distance, eccentricity, movementY, yearLength, daysPerYear, axis, rings, satellites) {
   
    if (rings) {
       this.rings = rings;
       this.rings.axis = axis;
    }
    
-   this.satellites = satellites;
-   
+   this.satellites = satellites;   
    
    (CUBIVERSE ? Cube : Sphere).call(this, radius, textureURL, function animation() {
          if (typeof this.animation.year === 'undefined') {
@@ -344,10 +350,10 @@ function Planet(radius, textureURL, distance, eccentricity, axis, yearLength, da
 
             this.animation.day += daysPerYear * .001;
          } 
-        
+
          mat4.translate(mvMatrix, mvMatrix, [
             this.animation.currentDistance * Math.sin(this.animation.year), 
-            0, 
+            movementY * Math.sin(this.animation.year % (2 * Math.PI)), 
             this.animation.currentDistance * Math.cos(this.animation.year)]);
 
 
@@ -373,7 +379,7 @@ Planet.prototype.constructor = Planet;
 
 /**
  * no point adding another layer of inheritance just to stick this in
- * stars & planets share the ability to have satellites, draws them recursively
+ * stars & planets share the ability to have rings/satellites, draws them recursively
  */
 Planet.prototype.draw = Star.prototype.draw = function() {
    this.lighting();
@@ -398,11 +404,13 @@ Planet.prototype.draw = Star.prototype.draw = function() {
 
    // removing the star's/planet's spin
    mvMatrixPop();
-
-   if (this.rings) {      
-      rings.draw();    
+/*
+   if (this.rings) {
+      mvMatrixPush();
+      this.rings.draw();  
+      mvMatrixPop();
    }
-
+*/
    for (var i = 0; i < this.satellites.length; i++) {
       mvMatrixPush();
       this.satellites[i].draw();

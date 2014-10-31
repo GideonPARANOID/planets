@@ -23,18 +23,17 @@ var gl,
 // constants
 var SHADERPATH = 'shader/',
    TEXTUREPATH = 'texture/',
+   DATAPATH = 'data/',
    FRAMETIME = 1000 / 60,
    CUBIVERSE = 0; // 'minecraft mode'
 
 // content
-var items,
-   sat,
-   rings;
+var items = [];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // initialisation
 
-
+var old = [];
 window.onload = function initialise() {
    var can = document.getElementById('can'), 
       loop = { 
@@ -55,20 +54,7 @@ window.onload = function initialise() {
    
    initialiseControls(can, loop);
 
-   sat = new Planet(1, TEXTUREPATH + 'moon.gif', 4, .2, 0, 250, 150, null, []);
-   rings = new Rings(20, TEXTUREPATH + 'ringsRGBA.png', function() {}, function() {});
-
-   items = [
-      new Star(   4,    TEXTUREPATH + 'sunmap.jpg',       2, [
-         new Planet(  .2,  TEXTUREPATH + 'mercurymap.jpg',   5,    .5,   0,    100,   30, null, []),
-         new Planet(  .3,  TEXTUREPATH + 'venusmap.jpg',     7,    .5,   0,   -200,   20, null, []),
-         new Planet(  .5,  TEXTUREPATH + 'earthmap.jpg',    10,    .1,   0,     80,  -60, null, []),
-         new Planet(  .6,  TEXTUREPATH + 'marsmap.jpg',     12,    .2,   0,     60,   60, null, []),
-         new Planet(   2,  TEXTUREPATH + 'jupitermap.jpg',  16,    .1,  .1,     10,  100, rings, [sat]),
-         new Planet( 2.1,  TEXTUREPATH + 'saturnmap.jpg',   22,    .1,   0,    120,  100, null, []),
-         new Planet( 1.5,  TEXTUREPATH + 'uranusmap.jpg',   28,     0,   0,     20,  150, null, []),
-         new Planet( 1.8,  TEXTUREPATH + 'neptunemap.jpg',  35,    .2,   0,     10,  200, null, [])
-   ])];
+   initialiseItems(DATAPATH + 'solarsystem.json');
 
    loop.handle = setInterval(loop.func, FRAMETIME);
 }
@@ -102,7 +88,7 @@ function initialiseProgram(fragmentShaderURL, vertexShaderURL) {
    function getShader(gl, url, type) {
       var shader = gl.createShader(type),
          request = new XMLHttpRequest();
-      request.open("GET", url, false);
+      request.open('GET', url, false);
       request.send();
 
       gl.shaderSource(shader, request.responseText);
@@ -148,6 +134,38 @@ function initialiseProgram(fragmentShaderURL, vertexShaderURL) {
    program.pointLightingLocationUniform = gl.getUniformLocation(program, 'uPointLightingLocation');
    program.pointLightingDiffuseColorUniform = gl.getUniformLocation(program, 'uPointLightingDiffuseColor');
    program.pointLightingSpecularColorUniform = gl.getUniformLocation(program, 'uPointLightingSpecularColor');
+}
+
+
+/**
+ * @param   url            string url of json file describing items 
+ */ 
+function initialiseItems(url) {
+   var request = new XMLHttpRequest();
+
+   request.open('GET', url, false);
+   request.send();
+
+   // recursively generates a list of planets/stars with their satellites from json
+   items = (function generateItems(json) {
+      var result = [];
+
+      for (var i = 0; i < json.length; i++) {
+         var current = json[i], rings;
+
+         var rings = current.rings ? new Rings(current.rings.size, TEXTUREPATH + current.rings.textureURL) : null;
+         
+
+         result[i] = current.type === 'Star' ? 
+            new Star(current.radius, TEXTUREPATH + current.textureURL, current.daysPerYear, 
+               generateItems(current.satellites)) :
+            new Planet(current.radius, TEXTUREPATH + current.textureURL, current.distance, 
+               current.eccentricity, current.movementY, current.velocity, current.daysPerYear,
+               current.axis, rings, generateItems(current.satellites));
+      }
+
+      return result;
+   })(JSON.parse(request.responseText));
 }
 
 
