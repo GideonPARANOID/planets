@@ -233,7 +233,6 @@ function Rings(size, textureURL, lighting) {
             this.animation.day += 100 * .001;
          }
 
-         mvMatrixPush();
 
          mat4.rotate(mvMatrix, mvMatrix, this.axis, [1, 0, 0]);
          mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
@@ -404,13 +403,13 @@ Planet.prototype.draw = Star.prototype.draw = function() {
 
    // removing the star's/planet's spin
    mvMatrixPop();
-/*
+
    if (this.rings) {
       mvMatrixPush();
       this.rings.draw();  
       mvMatrixPop();
    }
-*/
+
    for (var i = 0; i < this.satellites.length; i++) {
       mvMatrixPush();
       this.satellites[i].draw();

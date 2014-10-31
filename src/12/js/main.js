@@ -239,7 +239,6 @@ function drawScene() {
    for (var i = 0; i < items.length; i++) {
       mvMatrixPush();
       items[i].draw();
-
       mvMatrixPop();
    }
 }
