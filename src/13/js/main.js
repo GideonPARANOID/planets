@@ -13,10 +13,9 @@ var gl,
    mvMatrixStack = [],
    pMatrix = mat4.create(), 
    pMovement = { // default mouse position assumes the middle of the screen
-      x : .5, 
-      y : .5,
-      z : .5,
-      scroll : -50
+      position : [0, 0, -50],
+      angleMouse : [0, 0],
+      angleKeyboard: [0, 0]
    },
    paused = false;
 
@@ -30,46 +29,43 @@ var SHADERPATH = 'shader/',
 // content
 var items = [];
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // initialisation
 
-var old = [];
-window.onload = function initialise() {
-   var can = document.getElementById('can'), 
-      loop = { 
-         handle : null,
-         func : function tick() {
-            requestAnimationFrame(drawScene);
-         },
-      };
 
-   initialiseGL(can);
+window.onload = initialise;
+
+function initialise() {
+   var canvas = document.getElementById('can');
+
+   initialiseGL(canvas);
    initialiseProgram(SHADERPATH + 'per-frag-frag.gsgl', SHADERPATH + 'per-frag-vert.gsgl');
 
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
-
    gl.useProgram(program);
+
    initialiseLighting();
-   
-   initialiseControls(can, loop);
+   initialiseItems(DATAPATH + 'solarsystem.json'); 
+   initialiseControls(canvas);
 
-   initialiseItems(DATAPATH + 'solarsystem.json');
-
-   loop.handle = setInterval(loop.func, FRAMETIME);
+   initialise.loop = setInterval(function tick() {
+         requestAnimationFrame(drawScene);
+      }, FRAMETIME);
 }
 
 
 
 /**
- * @param   can            canvas dom object
+ * @param   canvas         canvas dom object
  */
-function initialiseGL(can) {
+function initialiseGL(canvas) {
    try {
-      gl = can.getContext('experimental-webgl');
+      gl = canvas.getContext('experimental-webgl');
 
-      can.width = window.innerWidth;
-      can.height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
       gl.width = window.innerWidth;
       gl.height = window.innerHeight;
 
@@ -139,6 +135,19 @@ function initialiseProgram(fragmentShaderURL, vertexShaderURL) {
 
 
 /**
+ * sets default lighting parameters
+ */
+function initialiseLighting() {
+   gl.uniform3f(program.pointLightingLocationUniform,  0, 0, 0);
+   gl.uniform3f(program.pointLightingDiffuseColorUniform, .5, .5, .5);
+   gl.uniform3f(program.pointLightingSpecularColorUniform, .5, .5, .5);
+   gl.uniform1i(program.samplerUniform, 0);
+   gl.uniform3f(program.ambientColorUniform, .1, .1, .1);  
+   gl.uniform3f(program.materialEmissiveColorUniform, 0, 0, 0);
+}
+
+
+/**
  * @param   url            string url of json file describing items 
  */ 
 function initialiseItems(url) {
@@ -156,7 +165,6 @@ function initialiseItems(url) {
 
          var rings = current.rings ? new Rings(current.rings.size, TEXTUREPATH + current.rings.textureURL) : null;
          
-
          result[i] = current.type === 'Star' ? 
             new Star(current.radius, TEXTUREPATH + current.textureURL, current.daysPerYear, 
                generateItems(current.satellites)) :
@@ -170,52 +178,96 @@ function initialiseItems(url) {
 }
 
 
-function initialiseControls() {
-   document.addEventListener('mousemove', rotatePerspective, false);
-   document.addEventListener('mousewheel', zoomPerspective, false);
-   document.addEventListener('DOMMouseScroll', zoomPerspective, false);
-   document.addEventListener('keypress', togglePause, false);
-   
-/*   window.addEventListener('deviceorientation', rotatePerspectiveAlt, true);
-   function rotatePerspectiveAlt(eve) {
-      pMovement.x = eve.gamma / 90;
-      pMovement.y = -eve.beta / 90;
-      pMovement.z = -eve.alpha / 90;
-      console.log(eve);
-   }*/
+/**
+ * @param   canvas         canvas element to assign controls to
+ */
+function initialiseControls(canvas) {
+   document.addEventListener('keydown', handleKeyDown, false);
+   document.addEventListener('keyup', handleKeyUp, false);
+   canvas.addEventListener('mousemove', handleMouse, false);
 
-   // perspective shifting
-   function rotatePerspective(eve) {
-      pMovement.x = eve.clientX / can.width;
-      pMovement.y = eve.clientY / can.height;
-   }
-
-   // zooming
-   function zoomPerspective(eve) {
-      eve.preventDefault();
-      pMovement.scroll += eve.wheelDelta  > 0 || eve.detail < 0 ? .3 : -.3;
-   }
-
-   // toggles the pausing of the program
-   function togglePause(eve) {    
-       switch (eve.keyCode) {
-         case 32 :
+   function handleKeyDown(event) {
+      switch (event.keyCode) {
+         case 32:
             paused = !paused;
+            break;
+         case 37 :
+            pMovement.angleKeyboard[0] -= .01;
+            break;
+         case 38 :
+            smoothMovement(true);
+            break;
+         case 39 :
+           pMovement.angleKeyboard[0] += .01;
+           break;
+         case 40 :
             break;
       }
    }
+
+   function handleKeyUp(event) {
+      switch (event.keyCode) {
+         case 38 :
+            smoothMovement(false);
+            break;
+      }
+   }
+
+
+   /**
+    * @param   keyDown        boolean whether the key is down
+    */
+   function smoothMovement(keyDown) { 
+      smoothMovement.keyDown = keyDown;
+   
+      // don't want to start a loop if there's already one on the go
+      if (smoothMovement.keyDown && !smoothMovement.loop) {
+
+         smoothMovement.up = Math.PI / 2;
+         smoothMovement.down = 0;
+         smoothMovement.loop = setInterval(function smooth() {
+
+            var weight = 1;
+
+            // acceleration
+            if (smoothMovement.down < Math.PI / 2) {
+               weight = Math.cos(smoothMovement.down += (Math.PI / 8));
+
+            // decceleration
+            } else if (!smoothMovement.keyDown) {
+               weight = Math.cos(smoothMovement.up -= (Math.PI / 8));
+
+               // if we're done, get out
+               if (smoothMovement.up <= 0) {
+                  clearInterval(smoothMovement.loop);
+                  smoothMovement.loop = null;
+               }
+            }
+
+            // reference: http://www.ewerksinc.com/refdocs/coordinate%20and%20unit%20vector.pdf
+            // angles are offset by pi / 2 & pi as we're slightly different to reference
+            pMovement.position[0] -= weight * 
+               Math.sin((Math.PI / 2) + pMovement.angleMouse[1] + pMovement.angleKeyboard[1]) * 
+               Math.sin(pMovement.angleMouse[0] + pMovement.angleKeyboard[0]);
+
+            pMovement.position[1] -= weight * 
+               Math.cos((Math.PI / 2) + pMovement.angleMouse[1] + pMovement.angleKeyboard[1]); 
+
+            pMovement.position[2] -= weight * 
+               Math.sin((Math.PI / 2) + pMovement.angleMouse[1] + pMovement.angleKeyboard[1]) * 
+               Math.cos(Math.PI + pMovement.angleMouse[0] + pMovement.angleKeyboard[0]); 
+          
+         }, FRAMETIME);
+      }
+   }
+
+
+   function handleMouse(event) {
+      pMovement.angleMouse = [
+         Math.PI * ((event.clientX / canvas.width) - .5),
+         Math.PI * ((event.clientY / canvas.height) - .5)];
+   }
 }
-
-
-function initialiseLighting() {
-   gl.uniform3f(program.pointLightingLocationUniform,  0, 0, 0);
-   gl.uniform3f(program.pointLightingDiffuseColorUniform, .5, .5, .5);
-   gl.uniform3f(program.pointLightingSpecularColorUniform, .5, .5, .5);
-   gl.uniform1i(program.samplerUniform, 0);
-   gl.uniform3f(program.ambientColorUniform, .1, .1, .1);  
-   gl.uniform3f(program.materialEmissiveColorUniform, 0, 0, 0);
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,13 +282,14 @@ function drawScene() {
    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
    mat4.perspective(pMatrix, 45, gl.width / gl.height, .1, 200);
-   mat4.translate(pMatrix, pMatrix, [0, 0, pMovement.scroll])
+
+   mat4.rotate(pMatrix, pMatrix, pMovement.angleKeyboard[1] + pMovement.angleMouse[1], [1, 0, 0]);
+   mat4.rotate(pMatrix, pMatrix, pMovement.angleKeyboard[0] + pMovement.angleMouse[0], [0, 1, 0]);
+
+   
+   mat4.translate(pMatrix, pMatrix, pMovement.position)
 
    // moving the perspective based on cursor location
-   mat4.rotate(pMatrix, pMatrix, pMovement.x - .5, [0, 1, 0]);
-   mat4.rotate(pMatrix, pMatrix, pMovement.y - .5, [1, 0, 0]);
-   //   mat4.rotate(pMatrix, pMatrix, pMovement.z, [0, 0, 1]);
-
 
 
    // basic order of things is - move the origin via a series of matrices, draw, then reset origin
@@ -245,11 +298,6 @@ function drawScene() {
       items[i].draw();
       mvMatrixPop();
    }
-
-   for (var i = 0; i < items.length; i++) {
-
-   }
-
 }
 
 

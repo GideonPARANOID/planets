@@ -277,7 +277,7 @@ Rings.prototype.draw = function() {
  * @super   Sphere 
  * @param   radius         @see Sphere
  * @param   textureURL     @see ItemElements
- * @param   yearLength     number length of time for the planet to orbit origin (arbitrary)
+ * @param   daysPerYear    number speed the star spins at (arbitrary)
  * @param   satellites     array of Planets 'owned' by a star
  */
 function Star(radius, textureURL, daysPerYear, satellites) {
@@ -297,7 +297,7 @@ function Star(radius, textureURL, daysPerYear, satellites) {
          mat4.rotate(mvMatrix, mvMatrix, this.animation.day, [0, 1, 0]);
 
       }, function lighting() {
-         gl.uniform3f(program.materialEmissiveColorUniform, .5, .5, 0);
+         gl.uniform3f(program.materialEmissiveColorUniform, .9, .9, .9);
          gl.uniform1f(program.materialShininessUniform, 5);
       });
 }
@@ -312,14 +312,18 @@ Star.prototype.constructor = Star;
  * @param   textureURL     @see ItemElements
  * @param   distance       number as the distance from the star/planet it is 'owned' by
  * @param   eccentricity   number describing the eccentricity of the orbit (circle is 0)
- * @param   axis           number radians angle for the planet to spin at
- * @param   yearLength     number length of time for the planet to orbit origin (arbitrary)
+ * @param   movementY      number how much for the orbit to vary vertically
+ * @param   velocity       number speed the planet travels at (arbitrary)
  * @param   daysPerYear    number of days in that year
+ * @param   axis           number radians angle for the planet to spin at
  * @param   rings          @see Rings
  * @param   satellites     array of Planets 'owned' by a planet
  */
-function Planet(radius, textureURL, distance, eccentricity, movementY, yearLength, daysPerYear, axis, rings, satellites) {
+function Planet(radius, textureURL, distance, eccentricity, movementY, velocity, daysPerYear, 
+   axis, rings, satellites) {
   
+   velocity /= 100000;   
+      
    if (rings) {
       this.rings = rings;
       this.rings.axis = axis;
@@ -334,8 +338,7 @@ function Planet(radius, textureURL, distance, eccentricity, movementY, yearLengt
             this.animation.currentDistance = distance;
          }
 
-         if (!paused) {
-            var velocity = yearLength * .00001;
+         if (!paused) { 
 
             // kepler's first law
             this.animation.currentDistance = 
@@ -351,9 +354,8 @@ function Planet(radius, textureURL, distance, eccentricity, movementY, yearLengt
 
          mat4.translate(mvMatrix, mvMatrix, [
             this.animation.currentDistance * Math.sin(this.animation.year), 
-            movementY * Math.sin(this.animation.year % (2 * Math.PI)), 
+            (movementY / 2) - (movementY * Math.sin(this.animation.year % (2 * Math.PI))), 
             this.animation.currentDistance * Math.cos(this.animation.year)]);
-
 
          // we wouldn't want the spinning of the planet to influence any satellites
          // popped off when drawing satellites
