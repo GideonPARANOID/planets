@@ -1,17 +1,19 @@
 [
    {
       "type" : "Star",
-      "textureURL" : "sunmap.jpg",
-      "specularURL" : "refmapspecular.jpg",
+      "colorMapURL" : "sunmap.jpg",
+      "specularMapURL" : null,
+      "darkMapURL" : null,
       "radius" : 4,
       "daysPerYear" : 2,
       "satellites" : [
          {
             "type" : "Planet",
-            "radius" : 2,
-            "textureURL" : "mercurymap.jpg",
-            "specularURL" : "refmapspecular.jpg",
-            "distance" : 0.5,
+            "radius" : 0.2,
+            "colorMapURL" : "mercurymap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
+            "distance" : 2,
             "eccentricity" : 0.5,
             "movementY" : 2,
             "velocity" : 100,
@@ -22,8 +24,9 @@
          }, {
             "type" : "Planet",
             "radius" : 0.3,
-            "textureURL" : "venusmap.jpg",
-            "specularURL" : "refmapspecular.jpg",
+            "colorMapURL" : "venusmap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
             "distance" : 5,
             "eccentricity" : 0.5,
             "movementY" : 2,
@@ -35,8 +38,9 @@
          }, {
             "type" : "Planet",
             "radius" : 0.5,
-            "textureURL" : "earthmap.jpg",
-            "specularURL" : "earthmapspecular.jpg",
+            "colorMapURL" : "earthmap.jpg",
+            "specularMapURL" : "earthmapspecular.jpg",
+            "darkMapURL" : "earthmapdark.jpg",
             "distance" : 10,
             "eccentricity" : 0.1,
             "movementY" : 2,
@@ -44,12 +48,29 @@
             "daysPerYear" : -60,
             "axis" : 0.1,
             "rings" : null,
-            "satellites" : []
+            "satellites" : [
+               {
+                  "type" : "Planet",
+                  "radius" : 0.1,
+                  "colorMapURL" : "moon.gif",
+                  "specularMapURL" : null,
+                  "darkMapURL" : null,
+                  "distance" : 0.6,
+                  "eccentricity" : 0.5,
+                  "movementY" : 0,
+                  "velocity" : 100,
+                  "daysPerYear" : 30,
+                  "axis" : 0, 
+                  "rings" : null,
+                  "satellites" : []   
+               }
+            ]
          }, {
             "type" : "Planet",
             "radius" : 0.6,
-            "textureURL" : "marsmap.jpg",
-            "specularURL" : "refmapspecular.jpg",
+            "colorMapURL" : "marsmap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
             "distance" : 12,
             "eccentricity" : 0.2,
             "movementY" : 2,
@@ -60,22 +81,23 @@
             "satellites" : []
          }, {
             "type" : "Planet",
-            "radius" : 2.1,
-            "textureURL" : "saturnmap.jpg",
-            "specularURL" : "refmapspecular.jpg",
-            "distance" : 22,
+            "radius" : 2,
+            "colorMapURL" : "jupitermap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
+            "distance" : 16,
             "eccentricity" : 0.1,
-            "movementY" : 1,
-            "velocity" : 120,
+            "movementY" : 2,
+            "velocity" : 100,
             "daysPerYear" : 100,
-            "axis" : 0,
-            "rings" : null,
+            "axis" : 0.1,
             "satellites" : []
-         }, {
+        }, {
             "type" : "Planet",
             "radius" : 1.5,
-            "textureURL" : "uranusmap.jpg",
-            "specularURL" : "refmapspecular.jpg",
+            "colorMapURL" : "uranusmap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
             "distance" : 28,
             "eccentricity" : 0.2,
             "movementY" : 2, 
@@ -87,35 +109,38 @@
          }, {
             "type" : "Planet",
             "radius" : 1.8,
-            "textureURL" : "neptunemap.jpg",
-            "specularURL" : "refmapspecular.jpg",
+            "colorMapURL" : "neptunemap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
             "distance" : 35,
             "eccentricity" : 0.2,
             "movementY" : 3,
             "velocity" : 10,
             "daysPerYear" : 200,
-            "axis" : 3,
+            "axis" : 1.5,
             "rings" : null,
             "satellites" : []
          }, {
             "type" : "Planet",
-            "radius" : 2,
-            "textureURL" : "jupitermap.jpg",
-            "specularURL" : "refmapspecular.jpg",
-            "distance" : 16,
+            "radius" : 2.1,
+            "colorMapURL" : "saturnmap.jpg",
+            "specularMapURL" : null,
+            "darkMapURL" : null,
+            "distance" : 22,
             "eccentricity" : 0.1,
-            "movementY" : 2,
-            "velocity" : 100,
+            "movementY" : 1,
+            "velocity" : 120,
             "daysPerYear" : 100,
-            "axis" : 0.1,
+            "axis" : 0,
             "rings" : {
                "type" : "Rings",
                "size" : 20,
-               "textureURL" : "ringsRGBA.png",
-               "specularURL" : "ringsRGBAspecular.png"
+               "colorMapURL" : "ringsRGBA.png",
+               "specularMapURL" : null
             },
             "satellites" : []
-         }
+        }
       ]
    }
 ]
+
