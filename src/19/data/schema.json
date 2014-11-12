@@ -1,0 +1,34 @@
+[
+   {
+      "type" : "Star",
+      "colorMapURL" : <string>,
+      "specularMapURL" : <string|null>,
+      "darkMapURL" : <string|null>,
+      "radius" : <number>,
+      "daysPerYear" : <number>,
+      "satellites" : [
+         {
+            "type" : "Planet",
+            "radius" : <number>,
+            "colorMapURL" : <string>,
+            "specularMapURL" : <string|null>,
+            "shininess" : <number, >1>,
+            "darkMapURL" : <string|null>,
+            "distance" : <number>,
+            "eccentricity" : <number, 0-1>,
+            "orbitAngle" : <number, radians>,
+            "orbitOffset" : <number, radians>,
+            "velocity" : <number>,
+            "daysPerYear" : <number>,
+            "axis" : <number, radians>, 
+            "rings" : 
+               "type" : "Rings",
+               "size" : <string>,
+               "colorMapURL" : <string>,
+            },
+            "satellites" : <array, Planet/Star>
+         }
+      ]
+   }
+]
+
