@@ -41,7 +41,7 @@
             "satellites" : []
          }, {
             "type" : "Planet",
-            "radius" : 5,
+            "radius" : 0.5,
             "colorMapURL" : ["earthmap.jpg", "earthmapcloud.jpg"],
             "specularMapURL" : "earthmapspecular.jpg",
             "shininess" : 5,
