@@ -3,7 +3,7 @@
  * @created 2014-10-15
  */
 
-//'use strict';
+'use strict';
 
 
 // frameworks
@@ -43,8 +43,10 @@ window.onload = initialise;
 function initialise() {
    var canvas = document.getElementById('can');
 
+   screenshot(canvas);
+
    initialiseGL(canvas);
-   initialiseProgram(SHADERPATH + 'per-frag-frag.gsgl', SHADERPATH + 'per-frag-vert.gsgl');
+   initialiseProgram(SHADERPATH + 'per-frag-frag.glsl', SHADERPATH + 'per-frag-vert.glsl');
 
    gl.clearColor(0, 0, 0, 1);
    gl.enable(gl.DEPTH_TEST);
@@ -66,7 +68,8 @@ function initialise() {
  */
 function initialiseGL(canvas) {
    try {
-      gl = canvas.getContext('experimental-webgl');
+      gl = canvas.getContext('experimental-webgl', {
+            preserveDrawingBuffer : true});
 
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -244,6 +247,10 @@ function initialiseControls(canvas) {
 
          case 79 : // o
             DRAWORBIT = !DRAWORBIT;
+            break;
+
+         case 81 : // q
+            screenshot();
             break;
 
          case 37 : case 65 : // left, a
@@ -480,3 +487,20 @@ function genTexPath(fileName) {
    }
 }
 
+
+
+/**
+ * @param   canvas         canvas dom element, optional, if passed will initialise to use this
+ */
+function screenshot(canvas) {
+   if (typeof screenshot.canvas === 'undefined') {
+      screenshot.canvas = canvas;
+      screenshot.index = 0;
+
+   } else {
+      var link = document.createElement('a');
+      link.href = screenshot.canvas.toDataURL();
+      link.download = 'screenshot-' + (++screenshot.index) + '.png';
+      link.click();   
+   }
+}
